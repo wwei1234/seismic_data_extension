@@ -15,11 +15,26 @@ This experiment follows the corrected auxiliary workflow:
 ## Directory Layout
 
 - `code/`: all runnable Python code.
-- `data/`: wavelets, well reflectivity, and synthetic training arrays.
-- `figures/`: wavelet, synthetic sample, prediction, and spectrum figures.
-- `checkpoints/`: trained model weights.
-- `logs/`: training curves and loss history.
-- `predictions/`: F3 low-pass input, prediction, reference, and metrics.
+- `Rawdata/`: local F3 SEG-Y and well-log inputs. This directory is ignored by Git because it contains large public data files.
+- `data/`: generated wavelets, well reflectivity, and synthetic training arrays. Ignored by Git.
+- `figures/`: generated wavelet, synthetic sample, prediction, and spectrum figures. Ignored by Git.
+- `checkpoints/`: trained model weights. Ignored by Git.
+- `logs/`: training curves and loss history. Ignored by Git.
+- `predictions/`: generated F3 low-pass input, prediction, reference, and metrics. Ignored by Git.
+
+Expected local raw-data layout:
+
+```text
+F3_auxiliary_experiment/
+  Rawdata/
+    Seismic_data.sgy
+    Well_data/
+      All_wells_RawData/
+        Checkshot/
+        Lasfiles/
+        Track/
+        Tops/
+```
 
 ## Full Run
 

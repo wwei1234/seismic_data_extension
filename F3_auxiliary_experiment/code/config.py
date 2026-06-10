@@ -1,12 +1,9 @@
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
-PROJECT_ROOT = ROOT.parent
-
-F3_ROOT = PROJECT_ROOT / "F3_Demo_2023"
-SEGY_PATH = F3_ROOT / "Rawdata" / "Seismic_data.sgy"
-WELL_RAW_DIR = F3_ROOT / "Rawdata" / "Well_data" / "All_wells_RawData"
+ROOT = Path(__file__).resolve().parents[1]   # F3_auxiliary_experiment/
+SEGY_PATH = ROOT / "Rawdata" / "Seismic_data.sgy"
+WELL_RAW_DIR = ROOT / "Rawdata" / "Well_data" / "All_wells_RawData"
 
 DATA_DIR = ROOT / "data"
 FIGURE_DIR = ROOT / "figures"

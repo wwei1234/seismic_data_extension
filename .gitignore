@@ -10,6 +10,8 @@ checkpoints/
 logs/
 prediction_results/
 prediction_results2/
+figures/
+predictions/
 
 # Large datasets and derived seismic records
 data/
@@ -22,6 +24,12 @@ elastic-marmousi-model/
 F3_Demo_2023.zip
 F3_auxiliary_experiment/F3_Demo_2023/Rawdata/Seismic_data.sgy
 F3_auxiliary_experiment/F3_Demo_2023/Seismics/
+F3_auxiliary_experiment/Rawdata/
+F3_auxiliary_experiment/data/
+F3_auxiliary_experiment/figures/
+F3_auxiliary_experiment/logs/
+F3_auxiliary_experiment/predictions/
+F3_auxiliary_experiment/checkpoints/
 
 # F3 large binary data files
 *.pck
@@ -31,5 +39,6 @@ F3_auxiliary_experiment/F3_Demo_2023/Seismics/
 # Editor and OS metadata
 .idea/
 .vscode/
+.claude/
 .DS_Store
 Thumbs.db
