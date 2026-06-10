@@ -1,0 +1,268 @@
+dTect V6.6
+Layer Sequence Generator Description
+Tue 11 Aug 2020, 15:00:15
+!
+Top depth: 0
+Elastic Property Selection: 
+WB.Fluid Replacement Is On: No
+WB.Nr models: 100
+WB.Elastic Properties.Nr of Elastic Properties: 3
+WB.Elastic Properties.Elastic.0.Name: Density
+WB.Elastic Properties.Elastic.0.Name of formula: Density
+WB.Elastic Properties.Elastic.0.Type: Density
+WB.Elastic Properties.Elastic.0.Mathematic Expression: 
+WB.Elastic Properties.Elastic.0.Selected properties: Density
+WB.Elastic Properties.Elastic.0.Units: 
+WB.Elastic Properties.Elastic.1.Name: PWave
+WB.Elastic Properties.Elastic.1.Name of formula: PWave
+WB.Elastic Properties.Elastic.1.Type: PWave
+WB.Elastic Properties.Elastic.1.Mathematic Expression: 
+WB.Elastic Properties.Elastic.1.Selected properties: Pwave velocity
+WB.Elastic Properties.Elastic.1.Units: 
+WB.Elastic Properties.Elastic.2.Name: SWave
+WB.Elastic Properties.Elastic.2.Name of formula: Castagna's equation
+WB.Elastic Properties.Elastic.2.Type: SWave
+WB.Elastic Properties.Elastic.2.Mathematic Expression: c0*Vp + c1
+WB.Elastic Properties.Elastic.2.Selected properties: 0.8619`P-wave velocity`-1172
+WB.Elastic Properties.Elastic.2.Units: 
+WB.Displayed property: Acoustic Impedance
+WB.Decimation: 1
+WB.Selected level: FS7
+WB.Selected content: ---
+WB.Allow zoom: Yes
+WB.Display lithology: No
+WB.Display flattened: No
+WB.Synthetics.Snap Level: 0
+WB.Synthetics.Synthetics Nr.0.Name: stat 120 Offset 0
+WB.Synthetics.Synthetics Nr.0.Synthetic Type: Zero Offset Stack
+WB.Synthetics.Synthetics Nr.0.Wavelet Name: stat 120
+WB.Synthetics.Synthetics Nr.0.Ray Parameter.Type: FullRayTracer
+WB.Synthetics.Synthetics Nr.0.Ray Parameter.Offset Range: 0
+WB.Synthetics.Synthetics Nr.0.Display Parameter.VD.Color Table: Seismics
+WB.Synthetics.Synthetics Nr.0.Display Parameter.VD.Type: Auto
+WB.Synthetics.Synthetics Nr.0.Display Parameter.VD.Clip Rate: 0.025`0.025
+WB.Synthetics.Synthetics Nr.0.Display Parameter.VD.Sym Mid Value: 1e30
+WB.Synthetics.Synthetics Nr.0.Display Parameter.VD.Auto Sym: Yes
+WB.Synthetics.Synthetics Nr.0.Display Parameter.VD.Range: 1e30`1e30
+WB.Synthetics.Synthetics Nr.0.Display Parameter.VD.Flip seq: No
+WB.Synthetics.Synthetics Nr.0.Display Parameter.WVA.Overlap: 1
+WB.Synthetics.Synthetics Nr.0.Display Parameter.WVA.Type: Auto
+WB.Synthetics.Synthetics Nr.0.Display Parameter.WVA.Clip Rate: 0.025`0.025
+WB.Synthetics.Synthetics Nr.0.Display Parameter.WVA.Sym Mid Value: 1e30
+WB.Synthetics.Synthetics Nr.0.Display Parameter.WVA.Auto Sym: Yes
+WB.Synthetics.Synthetics Nr.0.Display Parameter.WVA.Range: 1e30`1e30
+WB.Synthetics.Synthetics Nr.0.Display Parameter.WVA.Flip seq: No
+WB.Synthetics.Start View Area: 0.5`0.42883002`100.5`0.72393453
+WB.Synthetics.Nr of Synthetics: 1
+!
+Type: Profile
+Property.1: Density
+Property.2: Pwave velocity
+Property.3: Acoustic Impedance
+Block Size: 1
+Stop Marker.Name: FS2
+Layer interpolation.Default.Stretch/Squeeze ratio: 1
+Layer interpolation.Default.Bottom is reference: Yes
+Velocity at Z=0: 1e30
+Depth skip: 400
+Vertical display stacking: 1
+Draw wells: Yes
+Draw well names: Yes
+Draw control profiles: Yes
+Draw markers: Yes
+Draw marker names: Yes
+Draw marker connections: Yes
+Display marker names at control profile: No
+P0.Type: Ctrl
+P0.Well: No
+P0.Position: 0
+P0.1.Name: Seasurface
+P0.1.Color: 220`50`50
+P0.1.Depth: -4.1
+P0.1.Level: -1
+P0.2.Name: MFS11
+P0.2.Color: 50`50`220
+P0.2.Depth: 445.6
+P0.2.Level: -1
+P0.3.Name: FS11
+P0.3.Color: 50`200`50
+P0.3.Depth: 481.2
+P0.3.Level: -1
+P0.4.Name: MFS10
+P0.4.Color: 50`200`200
+P0.4.Depth: 513.60998535
+P0.4.Level: -1
+P0.5.Name: MFS9
+P0.5.Color: 255`210`0
+P0.5.Depth: 513.60998535
+P0.5.Level: -1
+P0.6.Name: MFS8
+P0.6.Color: 220`0`220
+P0.6.Depth: 513.60998535
+P0.6.Level: -1
+P0.7.Name: FS8
+P0.7.Color: 0`255`0
+P0.7.Depth: 534.83001709
+P0.7.Level: -1
+P0.8.Name: FS7
+P0.8.Color: 50`50`220
+P0.8.Depth: 584.83001709
+P0.8.Level: -1
+P0.9.Name: Truncation
+P0.9.Color: 170`85`255
+P0.9.Depth: 698.4
+P0.9.Level: -1
+P0.10.Name: Top Foresets
+P0.10.Color: 255`0`0
+P0.10.Depth: 732.9699707
+P0.10.Level: -1
+P0.11.Name: FS6
+P0.11.Color: 255`170`0
+P0.11.Depth: 891.91998291
+P0.11.Level: -1
+P0.12.Name: MFS4
+P0.12.Color: 0`85`255
+P0.12.Depth: 952.52001953
+P0.12.Level: -1
+P0.13.Name: FS4
+P0.13.Color: 50`200`50
+P0.13.Depth: 982.34002686
+P0.13.Level: -1
+P0.14.Name: FS3
+P0.14.Color: 50`200`200
+P0.14.Depth: 1060.2199707
+P0.14.Level: -1
+P0.15.Name: FS2
+P0.15.Color: 255`210`0
+P0.15.Depth: 1106.94995117
+P0.15.Level: -1
+P1.Well.ID: 100050.4
+P1.Property from Log.0: Density`Density`g/cc`No
+P1.Property from Log.1: Pwave velocity`Vp`m/s`No
+P1.Type: Well
+P1.Well: Yes
+P1.Position: 0.7
+P1.1.Name: Seasurface
+P1.1.Color: 220`50`50
+P1.1.Depth: -4.1
+P1.1.Level: -1
+P1.2.Name: MFS11
+P1.2.Color: 50`50`220
+P1.2.Depth: 445.6
+P1.2.Level: -1
+P1.3.Name: FS11
+P1.3.Color: 50`200`50
+P1.3.Depth: 481.2019043
+P1.3.Level: -1
+P1.4.Name: MFS10
+P1.4.Color: 50`200`200
+P1.4.Depth: 513.60998535
+P1.4.Level: -1
+P1.5.Name: MFS9
+P1.5.Color: 255`210`0
+P1.5.Depth: 513.60998535
+P1.5.Level: -1
+P1.6.Name: MFS8
+P1.6.Color: 220`0`220
+P1.6.Depth: 513.60998535
+P1.6.Level: -1
+P1.7.Name: FS8
+P1.7.Color: 0`255`0
+P1.7.Depth: 534.83355713
+P1.7.Level: -1
+P1.8.Name: FS7
+P1.8.Color: 50`50`220
+P1.8.Depth: 549.83258057
+P1.8.Level: -1
+P1.9.Name: Truncation
+P1.9.Color: 170`85`255
+P1.9.Depth: 628.39910889
+P1.9.Level: -1
+P1.10.Name: Top Foresets
+P1.10.Color: 255`0`0
+P1.10.Depth: 662.96557617
+P1.10.Level: -1
+P1.11.Name: FS6
+P1.11.Color: 255`170`0
+P1.11.Depth: 821.92010498
+P1.11.Level: -1
+P1.12.Name: MFS4
+P1.12.Color: 0`85`255
+P1.12.Depth: 882.52081299
+P1.12.Level: -1
+P1.13.Name: FS4
+P1.13.Color: 50`200`50
+P1.13.Depth: 912.34008789
+P1.13.Level: -1
+P1.14.Name: FS3
+P1.14.Color: 50`200`200
+P1.14.Depth: 990.22009277
+P1.14.Level: -1
+P1.15.Name: FS2
+P1.15.Color: 255`210`0
+P1.15.Depth: 1036.94995117
+P1.15.Level: -1
+P2.Type: Ctrl
+P2.Well: No
+P2.Position: 0.992
+P2.1.Name: Seasurface
+P2.1.Color: 220`50`50
+P2.1.Depth: -4.1
+P2.1.Level: -1
+P2.2.Name: MFS11
+P2.2.Color: 50`50`220
+P2.2.Depth: 445.6
+P2.2.Level: -1
+P2.3.Name: FS11
+P2.3.Color: 50`200`50
+P2.3.Depth: 481.2
+P2.3.Level: -1
+P2.4.Name: MFS10
+P2.4.Color: 50`200`200
+P2.4.Depth: 513.60998535
+P2.4.Level: -1
+P2.5.Name: MFS9
+P2.5.Color: 255`210`0
+P2.5.Depth: 513.60998535
+P2.5.Level: -1
+P2.6.Name: MFS8
+P2.6.Color: 220`0`220
+P2.6.Depth: 513.60998535
+P2.6.Level: -1
+P2.7.Name: FS8
+P2.7.Color: 0`255`0
+P2.7.Depth: 534.83001709
+P2.7.Level: -1
+P2.8.Name: FS7
+P2.8.Color: 50`50`220
+P2.8.Depth: 534.83001709
+P2.8.Level: -1
+P2.9.Name: Truncation
+P2.9.Color: 170`85`255
+P2.9.Depth: 598.4
+P2.9.Level: -1
+P2.10.Name: Top Foresets
+P2.10.Color: 255`0`0
+P2.10.Depth: 632.9699707
+P2.10.Level: -1
+P2.11.Name: FS6
+P2.11.Color: 255`170`0
+P2.11.Depth: 791.91998291
+P2.11.Level: -1
+P2.12.Name: MFS4
+P2.12.Color: 0`85`255
+P2.12.Depth: 852.52001953
+P2.12.Level: -1
+P2.13.Name: FS4
+P2.13.Color: 50`200`50
+P2.13.Depth: 882.34002686
+P2.13.Level: -1
+P2.14.Name: FS3
+P2.14.Color: 50`200`200
+P2.14.Depth: 960.2199707
+P2.14.Level: -1
+P2.15.Name: FS2
+P2.15.Color: 255`210`0
+P2.15.Depth: 1006.95001221
+P2.15.Level: -1
+!

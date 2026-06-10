@@ -1,0 +1,33 @@
+dTect V6.6
+Object Management file
+Fri 05 May 2023, 14:50:06
+!
+ID: 100080`10
+!
+Attribs: 1
+Atribute Definitions: dGB`Stream
+$Name: Attribs
+!
+Segmentations attributes (Dip-steered 3D): 5
+Attribute definitions: dGB`Stream
+$Name: Segmentations_attributes__Dip-steered_3D_.attr
+#Type: 3D
+!
+Inversion attributes: 6
+Attribute definitions: dGB`Stream
+$Name: Inversion_attributes.attr
+#Type: 3D
+!
+3D UVQ Attribs Texture + HC: 7
+Attribute definitions: dGB`Stream
+$Name: 3D_UVQ_Attribs_Texture_+_HC.attr
+#Type: 3D
+!
+Demo attributes: 10
+Attribute definitions: dGB`Stream
+$Name: Demo_attributes.attr
+#Version: 6.6.10
+#Created.At: Fri 05 May 2023, 14:49:56
+#Created.By: krist
+#Type: 3D
+!

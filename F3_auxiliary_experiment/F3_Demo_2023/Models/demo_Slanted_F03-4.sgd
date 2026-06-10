@@ -1,0 +1,250 @@
+dTect V6.6
+Layer Sequence Generator Description
+Tue 11 Aug 2020, 15:01:04
+!
+Top depth: 0
+Elastic Property Selection: 
+WB.Fluid Replacement Is On: No
+WB.Fluid Replacement.MaxNrUnits: 4
+WB.Fluid Replacement.Stratigraphic Unit.0.Name: Below.FS8.-
+WB.Fluid Replacement.Stratigraphic Unit.0.Content: -`L
+WB.Fluid Replacement.Stratigraphic Unit.0.Alternative content: Gas
+WB.Fluid Replacement.Stratigraphic Unit.0.Compressibility modulus solid: 4.1e10
+WB.Fluid Replacement.Stratigraphic Unit.0.Compressibility modulus water: 2.2e9
+WB.Fluid Replacement.Stratigraphic Unit.0.Compressibility modulus hydrocarbons: 30000000
+WB.Fluid Replacement.Stratigraphic Unit.0.Density water: 1100
+WB.Fluid Replacement.Stratigraphic Unit.0.Density hydrocarbons: 160
+WB.Fluid Replacement.Stratigraphic Unit.0.Water saturation: 0.95
+WB.Fluid Replacement.Stratigraphic Unit.0.Porosity: 0.35
+WB.Fluid Replacement.Stratigraphic Unit.0.Poisson ratio: 0.185
+WB.Fluid Replacement.Stratigraphic Unit.1.Name: Below.FS7.-
+WB.Fluid Replacement.Stratigraphic Unit.1.Content: -`L
+WB.Fluid Replacement.Stratigraphic Unit.1.Alternative content: Gas
+WB.Fluid Replacement.Stratigraphic Unit.1.Compressibility modulus solid: 4.1e10
+WB.Fluid Replacement.Stratigraphic Unit.1.Compressibility modulus water: 2.2e9
+WB.Fluid Replacement.Stratigraphic Unit.1.Compressibility modulus hydrocarbons: 30000000
+WB.Fluid Replacement.Stratigraphic Unit.1.Density water: 1100
+WB.Fluid Replacement.Stratigraphic Unit.1.Density hydrocarbons: 160
+WB.Fluid Replacement.Stratigraphic Unit.1.Water saturation: 0.95
+WB.Fluid Replacement.Stratigraphic Unit.1.Porosity: 0.35
+WB.Fluid Replacement.Stratigraphic Unit.1.Poisson ratio: 0.185
+WB.Fluid Replacement.Stratigraphic Unit.2.Name: Below.Truncation.-
+WB.Fluid Replacement.Stratigraphic Unit.2.Content: -`L
+WB.Fluid Replacement.Stratigraphic Unit.2.Alternative content: Gas
+WB.Fluid Replacement.Stratigraphic Unit.2.Compressibility modulus solid: 4.1e10
+WB.Fluid Replacement.Stratigraphic Unit.2.Compressibility modulus water: 2.2e9
+WB.Fluid Replacement.Stratigraphic Unit.2.Compressibility modulus hydrocarbons: 30000000
+WB.Fluid Replacement.Stratigraphic Unit.2.Density water: 1100
+WB.Fluid Replacement.Stratigraphic Unit.2.Density hydrocarbons: 160
+WB.Fluid Replacement.Stratigraphic Unit.2.Water saturation: 0.95
+WB.Fluid Replacement.Stratigraphic Unit.2.Porosity: 0.35
+WB.Fluid Replacement.Stratigraphic Unit.2.Poisson ratio: 0.185
+WB.Fluid Replacement.Stratigraphic Unit.3.Name: Below.Top Foresets.-
+WB.Fluid Replacement.Stratigraphic Unit.3.Content: -`L
+WB.Fluid Replacement.Stratigraphic Unit.3.Alternative content: Gas
+WB.Fluid Replacement.Stratigraphic Unit.3.Compressibility modulus solid: 4.1e10
+WB.Fluid Replacement.Stratigraphic Unit.3.Compressibility modulus water: 2.2e9
+WB.Fluid Replacement.Stratigraphic Unit.3.Compressibility modulus hydrocarbons: 30000000
+WB.Fluid Replacement.Stratigraphic Unit.3.Density water: 1100
+WB.Fluid Replacement.Stratigraphic Unit.3.Density hydrocarbons: 160
+WB.Fluid Replacement.Stratigraphic Unit.3.Water saturation: 0.95
+WB.Fluid Replacement.Stratigraphic Unit.3.Porosity: 0.35
+WB.Fluid Replacement.Stratigraphic Unit.3.Poisson ratio: 0.185
+WB.Fluid Replacement.Reference property for P-Wave: Pwave velocity
+WB.Fluid Replacement.Reference property for Density: Density
+WB.Fluid Replacement.Reference property for S-Wave: Swave velocity
+WB.Nr models: 100
+WB.Elastic Properties.Nr of Elastic Properties: 2
+WB.Elastic Properties.Elastic.0.Name: Density
+WB.Elastic Properties.Elastic.0.Name of formula: Density
+WB.Elastic Properties.Elastic.0.Type: Density
+WB.Elastic Properties.Elastic.0.Mathematic Expression: 
+WB.Elastic Properties.Elastic.0.Selected properties: Density
+WB.Elastic Properties.Elastic.0.Units: 
+WB.Elastic Properties.Elastic.1.Name: PWave
+WB.Elastic Properties.Elastic.1.Name of formula: PWave
+WB.Elastic Properties.Elastic.1.Type: PWave
+WB.Elastic Properties.Elastic.1.Mathematic Expression: 
+WB.Elastic Properties.Elastic.1.Selected properties: Pwave velocity
+WB.Elastic Properties.Elastic.1.Units: 
+WB.Displayed property: Acoustic Impedance
+WB.Decimation: 1
+WB.Selected level: FS8
+WB.Selected content: ---
+WB.Allow zoom: Yes
+WB.Display lithology: No
+WB.Display flattened: No
+WB.Synthetics.Snap Level: 0
+WB.Synthetics.Synthetics Nr.0.Name: stat 120 Offset 0
+WB.Synthetics.Synthetics Nr.0.Synthetic Type: Zero Offset Stack
+WB.Synthetics.Synthetics Nr.0.Wavelet Name: stat 120
+WB.Synthetics.Synthetics Nr.0.Ray Parameter.Type: FullRayTracer
+WB.Synthetics.Synthetics Nr.0.Ray Parameter.Offset Range: 0
+WB.Synthetics.Synthetics Nr.0.Display Parameter.VD.Color Table: Seismics
+WB.Synthetics.Synthetics Nr.0.Display Parameter.VD.Type: Auto
+WB.Synthetics.Synthetics Nr.0.Display Parameter.VD.Clip Rate: 0.025`0.025
+WB.Synthetics.Synthetics Nr.0.Display Parameter.VD.Sym Mid Value: 1e30
+WB.Synthetics.Synthetics Nr.0.Display Parameter.VD.Auto Sym: Yes
+WB.Synthetics.Synthetics Nr.0.Display Parameter.VD.Range: 1e30`1e30
+WB.Synthetics.Synthetics Nr.0.Display Parameter.VD.Flip seq: No
+WB.Synthetics.Synthetics Nr.0.Display Parameter.WVA.Overlap: 1
+WB.Synthetics.Synthetics Nr.0.Display Parameter.WVA.Type: Auto
+WB.Synthetics.Synthetics Nr.0.Display Parameter.WVA.Clip Rate: 0.025`0.025
+WB.Synthetics.Synthetics Nr.0.Display Parameter.WVA.Sym Mid Value: 1e30
+WB.Synthetics.Synthetics Nr.0.Display Parameter.WVA.Auto Sym: Yes
+WB.Synthetics.Synthetics Nr.0.Display Parameter.WVA.Range: 1e30`1e30
+WB.Synthetics.Synthetics Nr.0.Display Parameter.WVA.Flip seq: No
+WB.Synthetics.Start View Area: 0.5`0.40141243`100.5`0.85459721
+WB.Synthetics.Nr of Synthetics: 1
+!
+Type: Profile
+Property.1: Density
+Property.2: Pwave velocity
+Property.3: Acoustic Impedance
+Block Size: 2
+Stop Marker.Name: FS2
+Layer interpolation.Default.Stretch/Squeeze ratio: 0.5
+Layer interpolation.Default.Bottom is reference: Yes
+Velocity at Z=0: 1e30
+Depth skip: 0
+Vertical display stacking: 3
+Draw wells: Yes
+Draw well names: Yes
+Draw control profiles: Yes
+Draw markers: Yes
+Draw marker names: Yes
+Draw marker connections: Yes
+Display marker names at control profile: No
+P0.Well.ID: 100050.4
+P0.Property from Log.0: Density`Density`g/cc`No
+P0.Property from Log.1: Pwave velocity`Vp`m/s`No
+P0.Type: Well
+P0.Well: Yes
+P0.Position: 0
+P0.1.Name: Seasurface
+P0.1.Color: 220`50`50
+P0.1.Depth: -4.1
+P0.1.Level: -1
+P0.2.Name: MFS11
+P0.2.Color: 50`50`220
+P0.2.Depth: 445.6
+P0.2.Level: -1
+P0.3.Name: FS11
+P0.3.Color: 50`200`50
+P0.3.Depth: 481.2019043
+P0.3.Level: -1
+P0.4.Name: MFS10
+P0.4.Color: 50`200`200
+P0.4.Depth: 513.60998535
+P0.4.Level: -1
+P0.5.Name: MFS9
+P0.5.Color: 255`210`0
+P0.5.Depth: 513.60998535
+P0.5.Level: -1
+P0.6.Name: MFS8
+P0.6.Color: 220`0`220
+P0.6.Depth: 513.60998535
+P0.6.Level: -1
+P0.7.Name: FS8
+P0.7.Color: 0`255`0
+P0.7.Depth: 534.83355713
+P0.7.Level: -1
+P0.8.Name: FS7
+P0.8.Color: 50`50`220
+P0.8.Depth: 549.83258057
+P0.8.Level: -1
+P0.9.Name: Truncation
+P0.9.Color: 170`85`255
+P0.9.Depth: 628.39910889
+P0.9.Level: -1
+P0.10.Name: Top Foresets
+P0.10.Color: 255`0`0
+P0.10.Depth: 662.96557617
+P0.10.Level: -1
+P0.11.Name: FS6
+P0.11.Color: 255`170`0
+P0.11.Depth: 821.92010498
+P0.11.Level: -1
+P0.12.Name: MFS4
+P0.12.Color: 0`85`255
+P0.12.Depth: 882.52081299
+P0.12.Level: -1
+P0.13.Name: FS4
+P0.13.Color: 50`200`50
+P0.13.Depth: 912.34008789
+P0.13.Level: -1
+P0.14.Name: FS3
+P0.14.Color: 50`200`200
+P0.14.Depth: 990.22009277
+P0.14.Level: -1
+P0.15.Name: FS2
+P0.15.Color: 255`210`0
+P0.15.Depth: 1036.94995117
+P0.15.Level: -1
+P1.Type: Ctrl
+P1.Well: No
+P1.Position: 1
+P1.1.Name: Seasurface
+P1.1.Color: 220`50`50
+P1.1.Depth: -4.1
+P1.1.Level: -1
+P1.2.Name: MFS11
+P1.2.Color: 50`50`220
+P1.2.Depth: 745.6
+P1.2.Level: -1
+P1.3.Name: FS11
+P1.3.Color: 50`200`50
+P1.3.Depth: 781.2
+P1.3.Level: -1
+P1.4.Name: MFS10
+P1.4.Color: 50`200`200
+P1.4.Depth: 813.60998535
+P1.4.Level: -1
+P1.5.Name: MFS9
+P1.5.Color: 255`210`0
+P1.5.Depth: 813.60998535
+P1.5.Level: -1
+P1.6.Name: MFS8
+P1.6.Color: 220`0`220
+P1.6.Depth: 813.60998535
+P1.6.Level: -1
+P1.7.Name: FS8
+P1.7.Color: 0`255`0
+P1.7.Depth: 834.83001709
+P1.7.Level: -1
+P1.8.Name: FS7
+P1.8.Color: 50`50`220
+P1.8.Depth: 849.83001709
+P1.8.Level: -1
+P1.9.Name: Truncation
+P1.9.Color: 170`85`255
+P1.9.Depth: 928.4
+P1.9.Level: -1
+P1.10.Name: Top Foresets
+P1.10.Color: 255`0`0
+P1.10.Depth: 962.9699707
+P1.10.Level: -1
+P1.11.Name: FS6
+P1.11.Color: 255`170`0
+P1.11.Depth: 1121.92004395
+P1.11.Level: -1
+P1.12.Name: MFS4
+P1.12.Color: 0`85`255
+P1.12.Depth: 1182.52001953
+P1.12.Level: -1
+P1.13.Name: FS4
+P1.13.Color: 50`200`50
+P1.13.Depth: 1212.33996582
+P1.13.Level: -1
+P1.14.Name: FS3
+P1.14.Color: 50`200`200
+P1.14.Depth: 1290.2199707
+P1.14.Level: -1
+P1.15.Name: FS2
+P1.15.Color: 255`210`0
+P1.15.Depth: 1336.94995117
+P1.15.Level: -1
+C.0.Top Marker: FS8
+C.0.0.Content: Gas
+C.0.0.Thickness: 180
+!

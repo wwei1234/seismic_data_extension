@@ -18,6 +18,16 @@ spectrum_analysis/
 wavelets/
 elastic-marmousi-model/
 
+# F3 large binary files
+F3_Demo_2023.zip
+F3_auxiliary_experiment/F3_Demo_2023/Rawdata/Seismic_data.sgy
+F3_auxiliary_experiment/F3_Demo_2023/Seismics/
+
+# F3 large binary data files
+*.pck
+*.3dhc
+*.cbvs
+
 # Editor and OS metadata
 .idea/
 .vscode/

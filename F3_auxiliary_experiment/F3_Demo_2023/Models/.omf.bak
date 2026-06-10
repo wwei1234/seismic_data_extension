@@ -1,0 +1,98 @@
+dTect V6.6
+Object Management file
+Wed 12 Aug 2020, 09:01:03
+!
+ID: 100090`14
+!
+Models: 1
+Earth Models directory: dGB`Stream
+$Name: Models
+!
+Dutch North Sea: 2
+Stratigraphic Tree: od`Stream
+$Name: Dutch_North_Sea.sfw
+#Created.At: Mon 03 Aug 2020, 17:20:20
+#Created.By: cases`assia
+!
+A test: 3
+Layer Sequence Generator Description: od`Stream
+$Name: A_test.sgd
+#Type: Basic
+!
+4wells: 4
+Layer Sequence Generator Description: od`Stream
+$Name: 4wells.sgd
+#Created.At: Thu 16 Jul 2015, 15:41:50
+#Created.By: cases`claire
+#Type: Profile [dGB]
+!
+demo Gassman Brine-Gas: 5
+Layer Sequence Generator Description: od`Stream
+$Name: demo_Gassman_Brine-Gas.sgd
+#Created.At: Tue 11 Aug 2020, 13:51:14
+#Created.By: cases`arnaud
+#Type: Stochastic [dGB]
+!
+demo Gassman Brine-Oil: 6
+Layer Sequence Generator Description: od`Stream
+$Name: demo_Gassman_Brine-Oil.sgd
+#Created.At: Tue 11 Aug 2020, 14:25:59
+#Created.By: cases`arnaud
+#Type: Stochastic [dGB]
+!
+demo Gassman Gas-Brine: 7
+Layer Sequence Generator Description: od`Stream
+$Name: demo_Gassman_Gas-Brine.sgd
+#Created.At: Tue 11 Aug 2020, 14:27:34
+#Created.By: cases`arnaud
+#Type: Stochastic [dGB]
+!
+demo Gassman Oil-Brine: 8
+Layer Sequence Generator Description: od`Stream
+$Name: demo_Gassman_Oil-Brine.sgd
+#Created.At: Tue 11 Aug 2020, 14:28:47
+#Created.By: cases`arnaud
+#Type: Stochastic [dGB]
+!
+demo Gassman Oil-Gas: 9
+Layer Sequence Generator Description: od`Stream
+$Name: demo_Gassman_Oil-Gas.sgd
+#Created.At: Tue 11 Aug 2020, 14:29:36
+#Created.By: cases`arnaud
+#Type: Stochastic [dGB]
+!
+demo Simple Wedge: 10
+Layer Sequence Generator Description: od`Stream
+$Name: demo_Simple_Wedge.sgd
+#Created.At: Tue 11 Aug 2020, 14:37:11
+#Created.By: cases`arnaud
+#Type: Stochastic [dGB]
+!
+demo Slanted F03-4: 11
+Layer Sequence Generator Description: od`Stream
+$Name: demo_Slanted_F03-4.sgd
+#Created.At: Tue 11 Aug 2020, 14:46:48
+#Created.By: cases`arnaud
+#Type: Profile [dGB]
+!
+demo Wedge thickness: 12
+Layer Sequence Generator Description: od`Stream
+$Name: demo_Wedge_thickness.sgd
+#Created.At: Tue 11 Aug 2020, 14:59:02
+#Created.By: cases`arnaud
+#Type: Profile [dGB]
+!
+demo Wedge water saturation: 13
+Layer Sequence Generator Description: od`Stream
+$Name: demo_Wedge_water_saturation.sgd
+#Created.At: Tue 11 Aug 2020, 15:15:03
+#Created.By: cases`arnaud
+#Type: Profile [dGB]
+!
+demo Wedge porosity: 14
+Layer Sequence Generator Description: od`Stream
+$Name: demo_Wedge_porosity.sgd
+#Created.At: Wed 12 Aug 2020, 09:01:03
+#Created.By: cases`arnaud
+#Type: Profile [dGB]
+!

@@ -1,0 +1,115 @@
+dTect V6.0
+Display Properties
+Wed 24 Aug 2016, 21:13:51
+!
+2D Display.Track.Color: 255`255`255
+2D Display.Track.Size: 1
+2D Display.Track.Track Name Above: Yes
+2D Display.Track.Track Name Below: Yes
+2D Display.Track.Track Font: Helvetica`10`Bold`No
+2D Display.Markers.Color: 255`255`255
+2D Display.Markers.Size: 3
+2D Display.Markers.Single Marker Color: No
+2D Display.Markers.Marker Shape: 0
+2D Display.Markers.Cylinder Height: 1
+2D Display.Markers.Marker Name Font: Helvetica`15`Normal`No
+2D Display.Markers.Marker Name Color Same as Marker: No
+2D Display.Markers.Marker Name Color: 0`0`0
+2D Display.Markers.Selected Markers: Seasurface`MFS11`FS11`MFS10`MFS9`MFS8`FS8`FS7`Truncation`Top Foresets`FS6`MFS4`FS4`FS3`FS2`MFS2`FS1`MMU
+2D Display.Log.Left Log Color: 0`0`0
+2D Display.Log.Left Log Size: 1
+2D Display.Log.Left Log Name: Gamma Ray
+2D Display.Log.Left Log Range: 0`150
+2D Display.Log.Left Filled Log name: Gamma Ray
+2D Display.Log.Left Filled Log Range: 0`150
+2D Display.Log.Left Fill Left Log: Yes
+2D Display.Log.Right Fill Left Log: No
+2D Display.Log.Left Revert Range Bool: No
+2D Display.Log.Left Cliprate: 0
+2D Display.Log.Left Single Fill Color: No
+2D Display.Log.Left Data Range Bool: Yes
+2D Display.Log.Left Log Number: 1
+2D Display.Log.Left Log Overlapp: 0
+2D Display.Log.Left Log Seismic Style Color: 0`0`255
+2D Display.Log.Left Sequence name: SandShale
+2D Display.Log.Left Log Width XY: 1500
+2D Display.Log.Left Log scale: No
+2D Display.Log.Left Log Color Table Flipped: No
+2D Display.Log.Left Log Style: 0
+2D Display.Log.Right Log Color: 170`0`0
+2D Display.Log.Right Log Size: 1
+2D Display.Log.Right Log Name: None
+2D Display.Log.Right Log Range: 0`0
+2D Display.Log.Right Filled Log name: Density
+2D Display.Log.Right Filled Log Range: 0`0
+2D Display.Log.Left Fill Right Log: No
+2D Display.Log.Right Fill Right Log: No
+2D Display.Log.Right Revert Range Bool: No
+2D Display.Log.Right Cliprate: 0
+2D Display.Log.Right Single Fill Color: No
+2D Display.Log.Right Data Range Bool: Yes
+2D Display.Log.Right Log Number: 1
+2D Display.Log.Right Log Overlapp: 0
+2D Display.Log.Right Log Seismic Style Color: 170`0`0
+2D Display.Log.Right Sequence name: AI
+2D Display.Log.Right Log Width XY: 250
+2D Display.Log.Right Log scale: No
+2D Display.Log.Right Log Color Table Flipped: No
+2D Display.Log.Right Log Style: 0
+2D Display.2D Display.Display Stratigraphy: Yes
+3D Display.Track.Color: 255`255`255
+3D Display.Track.Size: 1
+3D Display.Track.Track Name Above: No
+3D Display.Track.Track Name Below: No
+3D Display.Track.Track Font: Helvetica`10`Bold`No
+3D Display.Markers.Color: 255`255`255
+3D Display.Markers.Size: 5
+3D Display.Markers.Single Marker Color: No
+3D Display.Markers.Marker Shape: 0
+3D Display.Markers.Cylinder Height: 1
+3D Display.Markers.Marker Name Font: Helvetica`10`Bold`No
+3D Display.Markers.Marker Name Color Same as Marker: Yes
+3D Display.Markers.Marker Name Color: 255`255`255
+3D Display.Markers.Selected Markers: Seasurface`MFS11`FS11`MFS10`MFS9`MFS8`FS8`FS7`Truncation`Top Foresets`FS6`MFS4`FS4`FS3`FS2`MFS2`FS1`MMU
+3D Display.Log.Left Log Color: 0`0`0
+3D Display.Log.Left Log Size: 1
+3D Display.Log.Left Log Name: Gamma Ray
+3D Display.Log.Left Log Range: 0`150
+3D Display.Log.Left Filled Log name: Gamma Ray
+3D Display.Log.Left Filled Log Range: 0`150
+3D Display.Log.Left Fill Left Log: No
+3D Display.Log.Right Fill Left Log: Yes
+3D Display.Log.Left Revert Range Bool: No
+3D Display.Log.Left Cliprate: 0
+3D Display.Log.Left Single Fill Color: No
+3D Display.Log.Left Data Range Bool: Yes
+3D Display.Log.Left Log Number: 1
+3D Display.Log.Left Log Overlapp: 0
+3D Display.Log.Left Log Seismic Style Color: 0`0`255
+3D Display.Log.Left Sequence name: Lithology
+3D Display.Log.Left Log Width XY: 750
+3D Display.Log.Left Log scale: No
+3D Display.Log.Left Log Color Table Flipped: No
+3D Display.Log.Left Log Style: 0
+3D Display.Log.Right Log Color: 0`0`0
+3D Display.Log.Right Log Size: 1
+3D Display.Log.Right Log Name: Gamma Ray
+3D Display.Log.Right Log Range: 0`150
+3D Display.Log.Right Filled Log name: Gamma Ray
+3D Display.Log.Right Filled Log Range: 0`150
+3D Display.Log.Left Fill Right Log: Yes
+3D Display.Log.Right Fill Right Log: No
+3D Display.Log.Right Revert Range Bool: No
+3D Display.Log.Right Cliprate: 0
+3D Display.Log.Right Single Fill Color: No
+3D Display.Log.Right Data Range Bool: Yes
+3D Display.Log.Right Log Number: 1
+3D Display.Log.Right Log Overlapp: 0
+3D Display.Log.Right Log Seismic Style Color: 0`0`255
+3D Display.Log.Right Sequence name: Lithology
+3D Display.Log.Right Log Width XY: 750
+3D Display.Log.Right Log scale: No
+3D Display.Log.Right Log Color Table Flipped: No
+3D Display.Log.Right Log Style: 0
+3D Display.3D Display.Display Stratigraphy: No
+!

@@ -1,0 +1,17 @@
+dTect V7.0.0rc3
+Object Management file
+2023-04-12T20:26:02Z
+!
+ID: 100040`17
+!
+Analysis features: 1
+Features directory: dGB`Stream
+$Name: Features
+!
+crossplot_SD_24Hz_44Hz: 16
+Positioned Vector Data: dTect`Stream
+$Name: crossplot_SD_24Hz_44Hz.pvds
+#Created.At: ma 17 aug 2015, 11:34:31
+#Created.By: demo
+#Type: 3D
+!

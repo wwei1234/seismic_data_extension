@@ -1,0 +1,75 @@
+dTect V7.0.0
+Object Management file
+2023-01-24T16:05:05Z
+!
+ID: 100030`11
+!
+Locations: 1
+Locations directory: dGB`Stream
+$Name: Locations
+!
+RMS velocities: 3
+PickSet Group: dGB`Stream
+$Name: RMS_velocities.pck
+#Velocity Type: Vrms
+#Category: Velocity Function
+#Type: Velocity Function
+#Created.By: dGB
+!
+Random Line through wells extended: 4
+RandomLine Geometry: dGB`Stream
+$Name: Random_Line_through_wells_extended.rdl
+#Created.By: dGB
+!
+offshore block names: 5
+PickSet Group: Shapefile`Stream
+$Name: ../Shapefiles/offshore block names.shp
+#Reverse Z: No
+#Positions in XY: Yes
+#Label Column: 0
+#Created.By: dGB
+#Created.At: Mon 10 Aug 2020, 17:23:09
+!
+NL_Topo: 6
+PickSet Group: Shapefile`Stream
+$Name: ../Shapefiles/NL_Topo.shp
+#Reverse Z: No
+#Positions in XY: Yes
+#Created.By: dGB
+#Created.At: Mon 10 Aug 2020, 17:23:53
+!
+NL_offshore_blocks: 7
+PickSet Group: Shapefile`Stream
+$Name: ../Shapefiles/NL_offshore_blocks.shp
+#Reverse Z: No
+#Positions in XY: Yes
+#Created.By: dGB
+#Created.At: Mon 10 Aug 2020, 17:24:14
+!
+NL offshore outline: 8
+PickSet Group: Shapefile`Stream
+$Name: ../Shapefiles/NL offshore outline.shp
+#Reverse Z: No
+#Positions in XY: Yes
+#Created.By: dGB
+#Created.At: Mon 10 Aug 2020, 17:24:25
+!
+Chimneys yes: 9
+PickSet Group: dGB`Stream
+$Name: Chimneys_yes.pck
+#Created.By: dGB
+#Type: PickSet
+!
+Chimneys no: 10
+PickSet Group: dGB`Stream
+$Name: Chimneys_no.pck
+#Created.By: dGB
+#Type: PickSet
+!
+Shallow Bright Spot: 11
+PickSet Group: dGB`Stream
+$Name: Shallow_Bright_Spot.pck
+#Created.By: dGB
+#Created.At: Tue 21 Apr 2015, 14:24:41
+#Type: Polygon
+!

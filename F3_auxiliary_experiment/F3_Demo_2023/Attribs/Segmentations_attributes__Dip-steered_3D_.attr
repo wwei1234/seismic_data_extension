@@ -1,0 +1,130 @@
+dTect V6.6
+Attribute definitions
+Fri 05 May 2023, 14:48:00
+!
+Attribute Descriptions
+3.Definition: Curvature stepout=3 constantvel=Yes velocity=2500 output=0
+3.UserRef: Mean curvature
+3.Hidden: No
+3.DataType: Other
+3.Index: 0
+3.Input.0: 34
+4.Definition: Curvature stepout=3 constantvel=Yes velocity=2500 output=4
+4.UserRef: Most positive curvature
+4.Hidden: No
+4.DataType: Other
+4.Index: 1
+4.Input.0: 34
+5.Definition: Storage id=100010.4 output=0
+5.UserRef: 4 Dip steered median filter
+5.Hidden: No
+5.DataType: Amplitude
+5.Index: 2
+9.Definition: Similarity gate=[-28,28] pos0=0,1 pos1=0,-1 extension=90 steering=No normalize=Yes browsedip=No output=0
+9.UserRef: Similarity
+9.Hidden: No
+9.DataType: Other
+9.Index: 3
+9.Input.0: 5
+14.Definition: Energy gate=[0,0] dograd=No output=1
+14.UserRef: Energy (RMS)
+14.Hidden: No
+14.DataType: Other
+14.Index: 4
+14.Input.0: 5
+16.Definition: Instantaneous output=0
+16.UserRef: Instantaneous Amplitude
+16.Hidden: No
+16.DataType: Other
+16.Index: 5
+16.Input.0: 5
+16.Input.1: 31
+17.Definition: Instantaneous output=8
+17.UserRef: Instantaneous envelope weighted frequency
+17.Hidden: No
+17.DataType: Other
+17.Index: 6
+17.Input.0: 5
+17.Input.1: 31
+18.Definition: VolumeStatistics stepout=2,2 gate=[0,0] nrtrcs=1 shape=Ellipse allowedgeeffects=No steering=Yes output=0
+18.UserRef: Dip-steered mean curvature
+18.Hidden: No
+18.DataType: Other
+18.Index: 7
+18.Input.0: 3
+18.Input.1: 34
+19.Definition: VolumeStatistics stepout=2,2 gate=[0,0] nrtrcs=1 shape=Ellipse allowedgeeffects=No steering=Yes output=0
+19.UserRef: Dip-steered most pos curvature
+19.Hidden: No
+19.DataType: Other
+19.Index: 8
+19.Input.0: 4
+19.Input.1: 34
+20.Definition: VolumeStatistics stepout=2,2 gate=[0,0] nrtrcs=1 shape=Ellipse allowedgeeffects=No steering=Yes output=0
+20.UserRef: Dip-steered Inline dip
+20.Hidden: No
+20.DataType: Other
+20.Index: 9
+20.Input.0: 4
+20.Input.1: 34
+21.Definition: VolumeStatistics stepout=2,2 gate=[0,0] nrtrcs=1 shape=Ellipse allowedgeeffects=No steering=Yes output=0
+21.UserRef: Dip-steered Crossline dip
+21.Hidden: No
+21.DataType: Other
+21.Index: 10
+21.Input.0: 4
+21.Input.1: 34
+22.Definition: VolumeStatistics stepout=2,2 gate=[0,0] nrtrcs=1 shape=Ellipse allowedgeeffects=No steering=Yes output=0
+22.UserRef: Dip-steered energy
+22.Hidden: No
+22.DataType: Other
+22.Index: 11
+22.Input.0: 14
+22.Input.1: 34
+23.Definition: VolumeStatistics stepout=2,2 gate=[0,0] nrtrcs=1 shape=Ellipse allowedgeeffects=No steering=Yes output=0
+23.UserRef: Dip-steered inst. amp.
+23.Hidden: No
+23.DataType: Other
+23.Index: 12
+23.Input.0: 16
+23.Input.1: 34
+24.Definition: VolumeStatistics stepout=2,2 gate=[0,0] nrtrcs=1 shape=Ellipse allowedgeeffects=No steering=Yes output=0
+24.UserRef: Dip-steered inst. env. weight. freq.
+24.Hidden: No
+24.DataType: Other
+24.Index: 13
+24.Input.0: 17
+24.Input.1: 34
+25.Definition: VolumeStatistics stepout=2,2 gate=[0,0] nrtrcs=1 shape=Ellipse allowedgeeffects=No steering=Yes output=0
+25.UserRef: Dip-steered similarity
+25.Hidden: No
+25.DataType: Other
+25.Index: 14
+25.Input.0: 9
+25.Input.1: 34
+31.Definition: Hilbert halflen=30 output=0
+31.UserRef: _4 Dip steered median filter_imag
+31.Hidden: Yes
+31.DataType: Other
+31.Index: 15
+31.Input.0: 5
+32.Definition: Storage id=100010.40 output=0
+32.UserRef: 3a Steering PCA111 MF225_inline_dip
+32.Hidden: Yes
+32.DataType: Dip
+32.Index: 16
+33.Definition: Storage id=100010.40 output=1
+33.UserRef: 3a Steering PCA111 MF225_crline_dip
+33.Hidden: Yes
+33.DataType: Dip
+33.Index: 17
+34.Definition: FullSteering phlock=No output=0
+34.UserRef: FullSteering 100010.40
+34.Hidden: Yes
+34.DataType: Other
+34.Index: 18
+34.Input.0: 32
+34.Input.1: 33
+MaxNrKeys: 34
+Type: 3D
+!

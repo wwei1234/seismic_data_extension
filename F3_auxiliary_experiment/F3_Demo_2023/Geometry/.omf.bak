@@ -1,0 +1,80 @@
+dTect V7.0.0rc4
+Object Management file
+2023-01-31T19:18:36Z
+!
+ID: 100100`37
+!
+Geometry: 1
+Survey Geometry Directory: dGB`Stream
+$Name: Geometry
+!
+19981104-1-04_0037: 28
+Geometry: 2D Geometry`Stream
+$Name: 19981104-1-04_0037.geom
+#Created.At: 2023-01-31T19:18:17Z
+#Created.By: kristoffer
+#Version: 7.0.0rc4
+!
+19981104-1-04_0038: 29
+Geometry: 2D Geometry`Stream
+$Name: 19981104-1-04_0038.geom
+#Created.At: 2023-01-31T19:18:18Z
+#Created.By: kristoffer
+#Version: 7.0.0rc4
+!
+19981104-1-04_0039: 30
+Geometry: 2D Geometry`Stream
+$Name: 19981104-1-04_0039.geom
+#Created.At: 2023-01-31T19:18:19Z
+#Created.By: kristoffer
+#Version: 7.0.0rc4
+!
+20021203-2-02_0010: 31
+Geometry: 2D Geometry`Stream
+$Name: 20021203-2-02_0010.geom
+#Created.At: 2023-01-31T19:18:20Z
+#Created.By: kristoffer
+#Version: 7.0.0rc4
+!
+20021203-2-02_0013: 32
+Geometry: 2D Geometry`Stream
+$Name: 20021203-2-02_0013.geom
+#Created.At: 2023-01-31T19:18:26Z
+#Created.By: kristoffer
+#Version: 7.0.0rc4
+!
+20021203-2-03_0032: 33
+Geometry: 2D Geometry`Stream
+$Name: 20021203-2-03_0032.geom
+#Created.At: 2023-01-31T19:18:29Z
+#Created.By: kristoffer
+#Version: 7.0.0rc4
+!
+20021203-2-03_0033: 34
+Geometry: 2D Geometry`Stream
+$Name: 20021203-2-03_0033.geom
+#Created.At: 2023-01-31T19:18:31Z
+#Created.By: kristoffer
+#Version: 7.0.0rc4
+!
+20021203-2-03_0034: 35
+Geometry: 2D Geometry`Stream
+$Name: 20021203-2-03_0034.geom
+#Created.At: 2023-01-31T19:18:32Z
+#Created.By: kristoffer
+#Version: 7.0.0rc4
+!
+20021203-2-03_0036: 36
+Geometry: 2D Geometry`Stream
+$Name: 20021203-2-03_0036.geom
+#Created.At: 2023-01-31T19:18:34Z
+#Created.By: kristoffer
+#Version: 7.0.0rc4
+!
+20021203-2-03_0038: 37
+Geometry: 2D Geometry`Stream
+$Name: 20021203-2-03_0038.geom
+#Created.At: 2023-01-31T19:18:36Z
+#Created.By: kristoffer
+#Version: 7.0.0rc4
+!

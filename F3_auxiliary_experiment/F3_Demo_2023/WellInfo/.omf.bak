@@ -1,0 +1,26 @@
+dTect V7.0.0
+Object Management file
+2023-01-24T17:49:50Z
+!
+ID: 100050`5
+!
+WellInfo: 1
+Well Info directory: dGB`Stream
+$Name: WellInfo
+!
+F02-1: 2
+Well: dGB`Stream
+$Name: F02-1.well
+!
+F03-2: 3
+Well: dGB`Stream
+$Name: F03-2.well
+!
+F03-4: 4
+Well: dGB`Stream
+$Name: F03-4.well
+!
+F06-1: 5
+Well: dGB`Stream
+$Name: F06-1.well
+!

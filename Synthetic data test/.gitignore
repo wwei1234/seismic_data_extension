@@ -1,0 +1,25 @@
+# Python cache and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Training artifacts and generated outputs
+checkpoints/
+logs/
+prediction_results/
+prediction_results2/
+
+# Large datasets and derived seismic records
+data/
+seismic_records/
+spectrum_analysis/
+wavelets/
+elastic-marmousi-model/
+
+# Editor and OS metadata
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
