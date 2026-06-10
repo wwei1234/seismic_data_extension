@@ -1,0 +1,48 @@
+#!/bin/sh
+
+max_bytes=100000000
+
+large_files=$(
+  git ls-tree -r -l HEAD |
+  awk -v max="$max_bytes" '
+    $4 != "-" && $4 + 0 > max {
+      size = $4
+      sub(/^[^\t]*\t/, "", $0)
+      print "  - " $0 " (" size " bytes)"
+    }
+  '
+)
+
+blocked_files=$(
+  git ls-tree -r --name-only HEAD |
+  grep -E '^(F3_auxiliary_experiment/(Rawdata|data|figures|logs|predictions|checkpoints)/|checkpoints/|logs/|prediction_results/|prediction_results2/|data/|seismic_records/|spectrum_analysis/|wavelets/)' || true
+)
+
+if [ -n "$large_files" ] || [ -n "$blocked_files" ]; then
+  echo "Push blocked by repository upload rules."
+  echo
+  echo "Rules:"
+  echo "  - Do not push files larger than 100 MB."
+  echo "  - Do not push raw seismic data, generated arrays, figures, logs, predictions, or checkpoints."
+  echo
+
+  if [ -n "$large_files" ]; then
+    echo "Files larger than 100 MB:"
+    echo "$large_files"
+    echo
+  fi
+
+  if [ -n "$blocked_files" ]; then
+    echo "Files in blocked experiment-output paths:"
+    echo "$blocked_files" | sed 's/^/  - /'
+    echo
+  fi
+
+  echo "Fix example:"
+  echo "  git rm --cached <file-or-directory>"
+  echo "  git add .gitignore"
+  echo "  git commit --amend --no-edit"
+  exit 1
+fi
+
+exit 0
