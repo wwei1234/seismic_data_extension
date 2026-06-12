@@ -7,14 +7,15 @@ from scipy.signal import fftconvolve
 
 sys.path.append(str(Path(__file__).resolve().parent))
 
-from config import DATA_DIR, DT, FIGURE_DIR, NARROW_BAND, WAVELET_LENGTH_MS, WELL_POSITIONS, WIDE_BAND
+from config import DATA_DIR, DT, FIGURE_DIR, NARROW_BAND, WAVELET_LENGTH_MS, WELL_POSITIONS
 from signal_utils import (
     average_amplitude_spectrum,
     estimate_wavelet_frequency_domain,
     normalize_max_abs,
-    shape_wavelet_to_band,
+    shape_wavelet_to_target_spectrum,
+    zero_phase_filter_trace,
 )
-from well_utils import load_well_reflectivity, load_well_trace
+from well_utils import compute_ai, load_well_reflectivity, load_well_trace
 
 
 def corrcoef(a, b):
@@ -158,17 +159,47 @@ def plot_well_estimation_steps(well_name, reflectivity, seismic_trace, wavelet, 
     return raw_cc, tie, out_path
 
 
+def plot_ai_reflectivity(well_logs):
+    n = len(well_logs)
+    fig, axes = plt.subplots(n, 2, figsize=(10, 3.2 * n), squeeze=False)
+    for row, (well_name, logs) in enumerate(well_logs.items()):
+        depth = logs["depth"]
+        ai = logs["ai"]
+        reflectivity = logs["reflectivity_time"]
+        time_s = np.arange(reflectivity.size) * DT
+        axes[row, 0].plot(ai, depth, "k-", lw=1.0)
+        axes[row, 0].invert_yaxis()
+        axes[row, 0].set_title(f"{well_name} acoustic impedance")
+        axes[row, 0].set_xlabel("AI")
+        axes[row, 0].set_ylabel("Depth")
+        axes[row, 0].grid(True, alpha=0.3)
+        axes[row, 1].plot(normalize_max_abs(reflectivity), time_s, "r-", lw=1.0)
+        axes[row, 1].invert_yaxis()
+        axes[row, 1].set_title(f"{well_name} time reflectivity")
+        axes[row, 1].set_xlabel("Normalized amplitude")
+        axes[row, 1].set_ylabel("Time (s)")
+        axes[row, 1].grid(True, alpha=0.3)
+    fig.tight_layout()
+    out_path = FIGURE_DIR / "01_ai_and_reflectivity.png"
+    fig.savefig(out_path, dpi=300)
+    plt.close(fig)
+    return out_path
+
+
 def main():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     FIGURE_DIR.mkdir(parents=True, exist_ok=True)
 
     wavelets = []
+    wide_wavelets = {}
+    narrow_wavelets = {}
     reflectivities = {}
     traces = {}
+    well_logs = {}
     tie_scores = {}
 
     for well_name in WELL_POSITIONS:
-        reflectivity, _, _ = load_well_reflectivity(well_name)
+        reflectivity, curves, _ = load_well_reflectivity(well_name)
         trace = load_well_trace(well_name)
         wavelet = estimate_wavelet_frequency_domain(
             reflectivity,
@@ -181,8 +212,20 @@ def main():
         if wavelet[len(wavelet) // 2] < 0:
             wavelet = -wavelet
         wavelets.append(wavelet)
+        lowpass_trace = zero_phase_filter_trace(trace, DT, NARROW_BAND)
+        wide_wavelets[well_name] = shape_wavelet_to_target_spectrum(wavelet, trace, DT)
+        narrow_wavelets[well_name] = shape_wavelet_to_target_spectrum(
+            wide_wavelets[well_name], lowpass_trace, DT
+        )
         reflectivities[well_name] = reflectivity
         traces[well_name] = trace
+        well_logs[well_name] = {
+            "depth": curves["DEPTH"],
+            "ai": compute_ai(curves),
+            "reflectivity_time": reflectivity,
+            "well_trace": trace,
+            "well_trace_lowpass": lowpass_trace,
+        }
         pos = WELL_POSITIONS[well_name]
         raw_cc, tie, out_path = plot_well_estimation_steps(
             well_name,
@@ -208,21 +251,35 @@ def main():
         estimated = -estimated
     estimated /= np.max(np.abs(estimated)) + 1e-8
 
-    wide = shape_wavelet_to_band(estimated, DT, WIDE_BAND)
-    narrow = shape_wavelet_to_band(estimated, DT, NARROW_BAND)
+    wide = np.mean(np.stack([wide_wavelets[name] for name in WELL_POSITIONS], axis=0), axis=0)
+    narrow = np.mean(np.stack([narrow_wavelets[name] for name in WELL_POSITIONS], axis=0), axis=0)
+    wide = normalize_max_abs(wide)
+    narrow = normalize_max_abs(narrow)
 
     np.save(DATA_DIR / "well_reflectivities.npy", reflectivities)
     np.save(DATA_DIR / "well_traces.npy", traces)
+    np.save(DATA_DIR / "well_ai_logs.npy", well_logs)
     np.save(DATA_DIR / "well_estimated_wavelets.npy", np.stack(wavelets, axis=0))
+    np.save(DATA_DIR / "well_wide_wavelets.npy", wide_wavelets)
+    np.save(DATA_DIR / "well_narrow_wavelets.npy", narrow_wavelets)
+    np.save(DATA_DIR / "well_wavelet_pairs.npy", {
+        well_name: {
+            "wide": wide_wavelets[well_name],
+            "narrow": narrow_wavelets[well_name],
+        }
+        for well_name in WELL_POSITIONS
+    })
     np.save(DATA_DIR / "well_wavelet_tie_scores.npy", tie_scores)
     np.save(DATA_DIR / "estimated_wide_wavelet.npy", wide)
     np.save(DATA_DIR / "estimated_narrow_wavelet.npy", narrow)
+    ai_fig = plot_ai_reflectivity(well_logs)
 
     time_ms = (np.arange(wide.size) - wide.size // 2) * DT * 1000.0
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    for well_name, wavelet in zip(WELL_POSITIONS, wavelets):
-        axes[0].plot(time_ms, wavelet, lw=1.2, alpha=0.55, label=well_name)
+    for well_name in WELL_POSITIONS:
+        axes[0].plot(time_ms, wide_wavelets[well_name], lw=1.2, alpha=0.55, label=f"{well_name} wide")
+        axes[0].plot(time_ms, narrow_wavelets[well_name], lw=1.0, alpha=0.35, ls="--")
     axes[0].plot(time_ms, wide, "r-", lw=2.5, label="wide target")
     axes[0].plot(time_ms, narrow, "b-", lw=2.5, label="narrow input")
     axes[0].set_xlabel("Time (ms)")
@@ -247,6 +304,7 @@ def main():
 
     print(f"Saved wavelets to {DATA_DIR}")
     print(f"Saved figure to {FIGURE_DIR / '01_wavelets_from_wells.png'}")
+    print(f"Saved AI/reflectivity figure to {ai_fig}")
     for well_name, score in tie_scores.items():
         print(
             f"{well_name}: inline={score['inline']}, crossline={score['crossline']}, "

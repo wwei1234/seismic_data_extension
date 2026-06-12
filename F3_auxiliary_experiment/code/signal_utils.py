@@ -125,3 +125,57 @@ def shape_wavelet_to_band(wavelet, dt, band):
     out -= np.mean(out)
     out *= tukey(out.size, alpha=0.2)
     return normalize_max_abs(out)
+
+
+def shape_wavelet_to_target_spectrum(wavelet, target, dt, smooth_sigma=1.5):
+    wavelet = np.asarray(wavelet, dtype=np.float64)
+    target = np.asarray(target, dtype=np.float64)
+    if target.ndim == 1:
+        target = target[:, None]
+    nfft = 1 << int(np.ceil(np.log2(max(wavelet.size * 8, target.shape[0] * 2))))
+    wavelet_spec = np.fft.rfft(wavelet, n=nfft)
+    target_work = target - np.mean(target, axis=0, keepdims=True)
+    target_spec = np.fft.rfft(target_work, n=nfft, axis=0)
+    target_amp = np.mean(np.abs(target_spec), axis=1)
+    if smooth_sigma and smooth_sigma > 0:
+        target_amp = gaussian_filter1d(target_amp, sigma=smooth_sigma)
+    target_amp = target_amp / (np.max(target_amp) + 1e-12)
+    shaped_spec = target_amp * np.exp(1j * np.angle(wavelet_spec))
+    shaped = np.fft.fftshift(np.fft.irfft(shaped_spec, n=nfft))
+    half = wavelet.size // 2
+    center = nfft // 2
+    out = shaped[center - half:center + half + 1].copy()
+    out -= np.mean(out)
+    out *= tukey(out.size, alpha=0.2)
+    return normalize_max_abs(out)
+
+
+def apply_time_variant_q_filter_trace(trace, dt, q=85.0, strength=0.35, window=96, hop=24):
+    trace = np.asarray(trace, dtype=np.float64)
+    n = trace.size
+    out = np.zeros(n, dtype=np.float64)
+    weights = np.zeros(n, dtype=np.float64)
+    win = tukey(window, alpha=0.35)
+    freqs = np.fft.rfftfreq(window, dt)
+    starts = list(range(0, max(1, n - window + 1), hop))
+    if starts[-1] != n - window:
+        starts.append(n - window)
+    for start in starts:
+        stop = start + window
+        segment = trace[start:stop] * win
+        center_time = (start + window / 2.0) * dt
+        attenuation = np.exp(-strength * np.pi * freqs * center_time / max(q, 1e-6))
+        filtered = np.fft.irfft(np.fft.rfft(segment) * attenuation, n=window)
+        out[start:stop] += filtered * win
+        weights[start:stop] += win ** 2
+    return (out / np.maximum(weights, 1e-8)).astype(np.float32)
+
+
+def apply_time_variant_q_filter_section(section, dt, q=85.0, strength=0.35, window=96, hop=24):
+    section = np.asarray(section, dtype=np.float32)
+    out = np.zeros_like(section, dtype=np.float32)
+    for ix in range(section.shape[1]):
+        out[:, ix] = apply_time_variant_q_filter_trace(
+            section[:, ix], dt, q=q, strength=strength, window=window, hop=hop
+        )
+    return out

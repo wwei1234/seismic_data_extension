@@ -37,6 +37,20 @@ def cube_to_time_trace_matrix(cube):
     return cube.transpose(1, 0, 2).reshape(cube.shape[1], -1)
 
 
+def average_phase_spectrum(section, dt, amp_threshold=0.05, fmax=100.0):
+    section = np.asarray(section, dtype=np.float64)
+    work = section - np.mean(section, axis=0, keepdims=True)
+    spec = np.fft.rfft(work, axis=0)
+    mean_spec = np.mean(spec, axis=1)
+    freqs = np.fft.rfftfreq(section.shape[0], dt)
+    amp = np.mean(np.abs(spec), axis=1)
+    if np.max(amp) > 0:
+        amp = amp / np.max(amp)
+    phase = np.angle(mean_spec)
+    valid = (freqs >= 1.0) & (freqs <= fmax) & (amp >= amp_threshold)
+    return freqs, phase, valid
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--prefix", default="f3_prediction")
@@ -83,6 +97,24 @@ def main():
     ax.legend()
     fig.tight_layout()
     fig.savefig(FIGURE_DIR / f"{args.prefix}_spectrum_compare.png", dpi=300)
+    plt.close(fig)
+
+    freq_n_ph, phase_n, valid_n = average_phase_spectrum(cube_to_time_trace_matrix(narrow), DT)
+    freq_p_ph, phase_p, valid_p = average_phase_spectrum(cube_to_time_trace_matrix(pred), DT)
+    freq_t_ph, phase_t, valid_t = average_phase_spectrum(cube_to_time_trace_matrix(target), DT)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(freq_n_ph[valid_n], phase_n[valid_n], "b.", ms=3, label="Low-pass input")
+    ax.plot(freq_p_ph[valid_p], phase_p[valid_p], "r.", ms=3, label="Prediction")
+    ax.plot(freq_t_ph[valid_t], phase_t[valid_t], "k.", ms=3, label="F3 reference")
+    ax.set_xlim(0, 100)
+    ax.set_ylim(-np.pi, np.pi)
+    ax.set_xlabel("Frequency (Hz)")
+    ax.set_ylabel("Phase (rad)")
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(FIGURE_DIR / f"{args.prefix}_phase_compare.png", dpi=300)
     plt.close(fig)
 
 
