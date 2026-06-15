@@ -1,0 +1,180 @@
+样本生成改进方案——Agent 执行指令
+================================================================================
+
+背景
+----
+当前合成样本与 F3 实际数据存在以下差距：
+1. 噪声级别偏高（F3 是高信噪比叠后数据，随机噪声极少）
+2. 最近邻插值引入横向毛刺（相邻道同一脉冲取整位置不同导致跳变）
+3. 纵向低频背景过强（子波低截频 3Hz 太低，褶积后产生低频拖尾）
+4. 构造褶皱幅度偏大（fold_amp 上限 35 采样点过大）
+5. Q 滤波作用在反射系数上而非合成道上（物理上不正确）
+
+本轮所有修改均在 02_generate_synthetic_dataset.py 中完成。
+
+
+================================================================================
+
+修改一：降低噪声级别
+--------------------------------------------------------------------------------
+
+找到 config.py 中的 NOISE_LEVELS，修改为：
+
+    NOISE_LEVELS = [0.0, 0.01, 0.02, 0.05]
+
+原因：F3 叠后数据信噪比很高，原来的 0.10/0.15/0.20 档噪声过强，
+训练时输入分布与推理时 F3 低通输入分布不匹配。
+加一档 0.0（无噪声）让网络也见过干净输入，推理时更稳定。
+
+噪声加入时机改到归一化之后：
+
+    # 原来（归一化前加噪声）
+    noisy_narrow = add_noise_by_ratio(clean_narrow, noise_level, rng)
+    shared_scale = ...
+    input_norm = np.clip(noisy_narrow / shared_scale, -1.0, 1.0)
+
+    # 改为（归一化后加噪声）
+    shared_scale = float(np.percentile(np.abs(clean_wide), 99))
+    shared_scale = max(shared_scale, 1e-8)
+    input_norm = np.clip(clean_narrow / shared_scale, -1.0, 1.0).astype(np.float32)
+    label_norm = np.clip(clean_wide   / shared_scale, -1.0, 1.0).astype(np.float32)
+    if noise_level > 0.0:
+        noise = rng.normal(0.0, noise_level, size=input_norm.shape).astype(np.float32)
+        input_norm = np.clip(input_norm + noise, -1.0, 1.0).astype(np.float32)
+    input_min = label_min = -shared_scale
+    input_max = label_max =  shared_scale
+
+
+================================================================================
+
+修改二：消除最近邻插值引入的横向毛刺
+--------------------------------------------------------------------------------
+
+在 build_structural_reflectivity 函数的 return 之前，对生成的二维反射系数
+剖面做横向（道方向）轻微平滑：
+
+    from scipy.ndimage import uniform_filter1d
+
+    # 在 return section, {...} 之前加入
+    section = uniform_filter1d(section, size=3, axis=1)
+    # axis=1 是道方向，只平滑横向跳变，不影响时间分辨率
+
+注意：size=3 表示只对相邻 3 道做均值，足以消除单点跳变，
+不会把反射同相轴糊掉。
+
+
+================================================================================
+
+修改三：去除纵向低频背景
+--------------------------------------------------------------------------------
+
+原因：子波低截频 3Hz 太低，褶积后在单道波形上产生缓慢的低频大幅摆动，
+在剖面上表现为纵向大波浪背景，F3 实际数据中没有这种特征。
+
+方案：将子波低截频从 3Hz 提高到 8Hz。
+
+找到 config.py 或子波生成代码中的频带设置，修改为：
+
+    # 原来
+    窄频输入：3-6-25-35 Hz
+    宽频目标：3-6-55-75 Hz
+
+    # 改为
+    窄频输入：8-12-25-35 Hz
+    宽频目标：8-12-55-75 Hz
+
+如果子波是从 well_wavelet_pairs 加载的（已经预先提取好的），
+则在子波提取阶段（01_wavelet_extraction.py 或类似文件）修改滤波器参数，
+重新提取子波后再重新生成数据集。
+
+如果子波提取不方便重跑，可以在 convolve_reflectivity 之后对合成道做高通滤波：
+
+    from scipy.signal import butter, filtfilt
+
+    def remove_lowfreq_background(section, dt=0.004, f_cut=8.0, order=4):
+        """
+        对合成道做高通滤波，去除低频背景
+        f_cut: 截止频率，单位 Hz
+        """
+        nyq = 0.5 / dt
+        normal_cut = f_cut / nyq
+        b, a = butter(order, normal_cut, btype='high')
+        result = np.zeros_like(section)
+        for ix in range(section.shape[1]):
+            result[:, ix] = filtfilt(b, a, section[:, ix])
+        return result
+
+    # 在褶积之后、归一化之前调用
+    clean_narrow = remove_lowfreq_background(clean_narrow, dt=DT, f_cut=8.0)
+    clean_wide   = remove_lowfreq_background(clean_wide,   dt=DT, f_cut=8.0)
+
+
+================================================================================
+
+修改四：降低构造褶皱幅度
+--------------------------------------------------------------------------------
+
+在 build_structural_reflectivity 函数中，修改褶皱幅度范围：
+
+    # 原来
+    fold_amp = rng.uniform(6.0, 35.0)
+
+    # 改为
+    fold_amp = rng.uniform(3.0, 15.0)
+
+原因：原来最大 35 个采样点 × 4ms = 140ms 的起伏量偏大，
+视觉上横向大波浪过于夸张，与 F3 工区实际构造幅度不符。
+
+
+================================================================================
+
+修改五：Q 滤波从反射系数移到合成道上
+--------------------------------------------------------------------------------
+
+原来 Q 滤波作用在反射系数上，物理上不正确（Q 衰减应作用于传播中的地震波，
+即褶积之后的合成道），且会破坏反射系数的稀疏性。
+
+    # 原来
+    q_reflectivity = apply_time_variant_q_filter_section(
+        base_reflectivity, DT, q=args.q, strength=args.q_strength
+    )
+    clean_narrow = convolve_reflectivity(q_reflectivity, narrow_wavelet)
+    clean_wide   = convolve_reflectivity(q_reflectivity, wide_wavelet)
+
+    # 改为
+    clean_narrow_raw = convolve_reflectivity(base_reflectivity, narrow_wavelet)
+    clean_wide_raw   = convolve_reflectivity(base_reflectivity, wide_wavelet)
+    clean_narrow = apply_time_variant_q_filter_section(
+        clean_narrow_raw, DT, q=args.q, strength=args.q_strength
+    )
+    clean_wide = apply_time_variant_q_filter_section(
+        clean_wide_raw, DT, q=args.q, strength=args.q_strength
+    )
+
+Q 滤波参数建议：
+    Q 值：60（F3 工区砂泥岩地层，Q 一般在 50-80 之间；值越小衰减越强）
+    strength：保持原值，若深层振幅衰减不明显可适当增大
+
+在 config.py 中：
+    Q_FILTER_Q = 60
+    Q_FILTER_STRENGTH 保持不变或小幅增大
+
+
+================================================================================
+
+修改顺序建议
+--------------------------------------------------------------------------------
+
+1. 修改 config.py：NOISE_LEVELS、Q_FILTER_Q、子波频带（如可修改）
+2. 修改 build_structural_reflectivity：fold_amp 范围、return 前加横向平滑
+3. 修改 main 循环：Q 滤波位置、低频去除、归一化后加噪声
+4. 重新生成数据集
+5. 对比新旧合成样本图（09_synthetic_section_pairs）与 F3 参考图，
+   重点检查：
+   - 单道波形是否还有低频大幅摆动
+   - 同相轴横向是否还有毛刺
+   - 深层振幅是否相对浅层有明显衰减
+   - 噪声视觉上是否与 F3 接近
+
+
+================================================================================

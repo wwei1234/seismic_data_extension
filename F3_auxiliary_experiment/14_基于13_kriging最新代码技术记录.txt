@@ -1,0 +1,641 @@
+基于 13_kriging 最新代码技术记录
+================================================================================
+生成时间：2026-06-15
+代码位置：
+  样本生成：13_kriging/code/02_generate_synthetic_dataset.py
+  训练脚本：13_kriging/code/01_train.py
+  F3 推理：13_kriging/code/02_predict_f3.py
+  评估脚本：13_kriging/code/03_evaluate.py
+  频谱绘图：13_kriging/code/04_plot_latest_prediction_spectra.py
+  高通残差后处理：13_kriging/code/05_highpass_residual_recombine.py
+
+
+================================================================================
+一、当前方案总体定位
+================================================================================
+
+13_kriging 是在前序 shared-normalization 和 residual-band-constrained 思路上继续改进的当前最新方案。
+
+核心变化：
+  1. 样本生成不再使用单井横向拉伸，而是使用多井普通克里金/序贯高斯模拟构造二维反射系数剖面。
+  2. 使用 F3 实际低通数据提取局部振幅包络，并调制合成样本，使训练数据振幅分布更贴近 F3。
+  3. 样本宽度设为 922 道，与当前 F3 数据 crossline 数一致。
+  4. 训练样本保存形式仍是“低通输入 + 宽频标签”，但训练时网络实际学习的是残差：
+
+        residual_target = wide_label - narrow_input
+
+  5. 推理时先预测残差，再加回低通输入得到最终宽频预测。
+  6. 当前推理输出前缀为 kriging_v1。
+
+
+================================================================================
+二、样本生成方案
+================================================================================
+
+2.1 数据来源
+--------------------------------------------------------------------------------
+
+井数据来源：
+  13_kriging/code/config.py 中 SOURCE_DATA_DIR 指向：
+      01_basic_strategy/data
+
+使用的数据包括：
+  - well_reflectivities.npy
+  - well_estimated_wavelets.npy
+
+SEG-Y 数据来源：
+  Rawdata/Seismic_data.sgy
+
+F3 采样参数：
+  DT = 0.004 s
+  SHOTNUM = 651
+
+
+2.2 多井克里金反射系数剖面
+--------------------------------------------------------------------------------
+
+代码函数：
+  signal_utils.build_multiwell_section_kriging
+
+井组合：
+  - 2 口井组合：6 组
+  - 3 口井组合：4 组
+  - 4 口井组合：1 组
+  - 合计 11 组
+
+每组生成：
+  PROFILES_PER_COMBO = 2
+
+每个剖面对应 4 个噪声档位：
+  NOISE_LEVELS = [0.0, 0.01, 0.02, 0.05]
+
+因此理论剖面数量：
+  11 × 2 × 4 = 88 个剖面
+
+剖面宽度：
+  SYNTHETIC_SECTION_WIDTH = 922
+
+克里金参数：
+  KRIGING_NUGGET = 0.01
+  KRIGING_SILL = 1.0
+  range_ 由 F3 低通数据横向相关性估计，限制在 100-500 道之间。
+
+实现逻辑：
+  - 对每个时间采样点，将所选井的反射系数作为井点值。
+  - 如果只有 2 口井，用线性插值。
+  - 如果有 3 口或 4 口井，用 ordinary kriging 的均值加序贯高斯扰动，生成一个等概率 realization。
+
+
+2.3 构造扰动
+--------------------------------------------------------------------------------
+
+代码函数：
+  02_generate_synthetic_dataset.py:add_structural_perturbation
+
+对克里金生成的二维反射系数剖面施加：
+  - 线性倾斜：uniform(-0.08, 0.08)
+  - 二次弯曲：uniform(-35, 35)
+  - 2-4 组褶皱正弦扰动：
+      振幅 uniform(3, 15)
+      周期 uniform(140, 650)
+  - 1-3 个局部高斯隆起：
+      振幅 uniform(-28, 28)
+      宽度 uniform(70, 240)
+  - 可选微起伏：
+      概率 30%，振幅 uniform(0.3, 1.0)，周期 uniform(10, 50)
+  - 横向平滑随机抖动：
+      normal(0, 3.5)，Gaussian sigma=7
+  - 主断层：
+      概率 65%，断距 uniform(4, 14)，正负随机
+  - 次级断层：
+      概率 25%，断距 uniform(3, 8)，正负随机
+
+位移应用方式：
+  使用 nearest-neighbour 采样保持反射系数稀疏性，最后沿横向做 size=3 的 uniform_filter1d 平滑。
+
+
+2.4 褶积与低通数据生成
+--------------------------------------------------------------------------------
+
+当前 13_kriging 没有分别使用窄频子波和宽频子波褶积。
+
+实际流程是：
+  1. 从 raw_wavelets 中取所选组合第一口井的原始估计子波。
+  2. clean_wide = convolve_reflectivity(base_refl, wavelet)
+  3. clean_narrow = zero_phase_filter_section(clean_wide, DT, NARROW_BAND)
+
+低通频带：
+  NARROW_BAND = (3.0, 6.0, 25.0, 35.0)
+
+也就是说：
+  宽频合成数据由原始估计子波褶积得到；
+  低通输入不是单独窄频子波褶积，而是由 clean_wide 再做 3-6-25-35 Hz 梯形低通得到。
+
+
+2.5 Q 滤波
+--------------------------------------------------------------------------------
+
+Q 滤波施加在褶积后的合成地震数据上：
+  - clean_narrow
+  - clean_wide
+
+参数：
+  Q_FILTER_Q = 60
+  Q_FILTER_STRENGTH = 0.35
+  window = 96 samples
+  hop = 24 samples
+  Tukey window alpha = 0.35
+
+公式形式：
+  attenuation = exp(-strength * pi * f * t / Q)
+
+其中 t 为短时窗中心时间。
+
+
+2.6 F3 振幅包络调制
+--------------------------------------------------------------------------------
+
+目的：
+  让合成剖面的局部振幅分布接近 F3 实际数据，减少训练数据和推理数据之间的振幅分布偏移。
+
+流程：
+  1. 读取 F3 数据中间 inline。
+  2. 对该 inline 做 3-6-25-35 Hz 低通。
+  3. 用局部 RMS 估计振幅包络：
+        smooth_t = 30
+        smooth_x = 100
+  4. 包络归一化到 mean=1。
+  5. 从 F3 包络中随机裁剪一个与合成剖面同尺寸的 patch。
+  6. 同时调制 clean_wide 和 clean_narrow：
+        clean_wide *= envelope_patch
+        clean_narrow *= envelope_patch
+
+
+2.7 归一化
+--------------------------------------------------------------------------------
+
+当前训练样本使用 shared-scale 归一化：
+
+    shared_scale = percentile(abs(clean_wide), 99)
+    input_norm = clip(clean_narrow / shared_scale, -1, 1)
+    label_norm = clip(clean_wide / shared_scale, -1, 1)
+
+特点：
+  - 输入和标签共享同一个尺度。
+  - 尺度来自宽频标签的 99 分位数。
+  - 保留低通输入和宽频标签之间的真实相对振幅关系。
+  - 噪声在归一化后加入，仅加到 input_norm 上。
+
+注意：
+  训练数据保存的 train_labels / val_labels 是宽频标签，不是残差。
+  残差是在训练 Dataset 中动态计算：
+
+      r = y - x
+
+
+2.8 切片
+--------------------------------------------------------------------------------
+
+patch 大小：
+  PATCH_SIZE = 256
+
+patch 步长：
+  PATCH_STRIDE = 64
+
+保存文件：
+  13_kriging/data/train_inputs.npy
+  13_kriging/data/train_labels.npy
+  13_kriging/data/val_inputs.npy
+  13_kriging/data/val_labels.npy
+  13_kriging/data/synthetic_section_inputs.npy
+  13_kriging/data/synthetic_section_labels.npy
+  13_kriging/data/synthetic_metadata.npy
+  13_kriging/data/synthetic_patch_metadata.npy
+
+
+================================================================================
+三、训练方案
+================================================================================
+
+3.1 网络结构
+--------------------------------------------------------------------------------
+
+主网络：
+  UNetCBAM
+
+输入输出：
+  输入：1 × 256 × 256 低通归一化 patch
+  输出：1 × 256 × 256 残差 patch
+
+UNet 编码-解码结构：
+  - in_conv
+  - down1, down2, down3, down4
+  - up1, up2, up3, up4
+  - out_conv
+
+base channel：
+  base_c = 32
+
+注意力模块：
+  CBAM = ChannelAttention + SpatialAttention
+
+当前 ZeroMeanResidualModel 在 UNetCBAM 外包了一层：
+
+    out = net(x)
+    out = out - out.mean(dim=(-2, -1), keepdim=True)
+
+作用：
+  强制每个 patch 输出残差零均值，抑制 DC 偏置。
+
+
+3.2 训练目标
+--------------------------------------------------------------------------------
+
+样本文件保存：
+  x = narrow input
+  y = wide label
+
+训练时动态计算真实残差：
+
+    residual_target = y - x
+
+网络预测：
+
+    residual_pred = model(x)
+
+宽频重建：
+
+    wide_pred = x + residual_pred
+
+因此当前模型实际学习的是残差，而不是直接学习宽频数据。
+
+
+3.3 损失函数
+--------------------------------------------------------------------------------
+
+损失类：
+  ResidualBandConstrainedLoss
+
+总损失：
+
+    total = 1.0 * loss_wide
+          + 0.2 * loss_res_l1
+          + mean_weight * loss_mean
+          + 1.0 * loss_rb
+          + 0.5 * loss_er
+
+默认：
+  mean_weight = 0.1
+
+各项含义：
+  loss_wide:
+    L1(wide_pred, wide_target)
+    约束最终重建的宽频结果。
+
+  loss_res_l1:
+    L1(residual_pred, residual_target)
+    约束残差本身。
+
+  loss_mean:
+    abs(mean(residual_pred))
+    抑制残差 DC 偏置。
+
+  loss_rb:
+    residual_band_loss(residual_pred, residual_target)
+    只在残差的 25-75 Hz 频带中约束振幅和相位：
+      loss_amp = mean(abs(abs(P_band) - abs(L_band)))
+      loss_phase = mean(1 - cos(angle(P_band) - angle(L_band)))
+      loss_rb = loss_amp + 0.3 * loss_phase
+
+  loss_er:
+    residual_energy_ratio_loss(residual_pred, residual_target)
+    对 35-75 Hz 能量占比做非对称约束：
+      ratio = mean(abs(FFT(x))[35-75 Hz]) / mean(abs(FFT(x)))
+      loss = ReLU(ratio_label - ratio_pred)
+    只惩罚高频不足，不惩罚高频超过标签。
+
+
+3.4 训练配置
+--------------------------------------------------------------------------------
+
+优化器：
+  Adam
+
+初始学习率：
+  lr = 1e-3
+
+batch size：
+  4
+
+最大 epoch：
+  300
+
+学习率调度：
+  ReduceLROnPlateau
+  patience = 10
+  factor = 0.5
+
+early stop：
+  patience = 300
+
+数据增强：
+  - 左右翻转，概率 50%
+  - 上下翻转，概率 50%
+
+输出：
+  13_kriging/data/checkpoints/best_model.pth
+  13_kriging/data/checkpoints/last_model.pth
+  13_kriging/logs/training_history.npy
+  13_kriging/logs/training_curves.png
+
+
+================================================================================
+四、F3 推理流程
+================================================================================
+
+4.1 输入预处理
+--------------------------------------------------------------------------------
+
+读取 F3 原始数据：
+
+    cube = read_segy(SEGY_PATH, shotnum=651)
+
+每个 inline：
+
+    target = cube[il_idx]
+    narrow_raw = zero_phase_filter_section(target, DT, NARROW_BAND)
+
+推理低通频带：
+
+    NARROW_BAND = (3.0, 6.0, 25.0, 35.0)
+
+推理归一化：
+
+    narrow_scale = percentile(abs(narrow_raw), 99)
+    narrow_norm = clip(narrow_raw / narrow_scale, -1, 1)
+
+注意：
+  训练时 shared_scale 来自 clean_wide；
+  推理时只能看到 narrow_raw，因此使用 narrow_scale，并在反归一化时乘以 R_MEDIAN 补偿。
+
+R_MEDIAN 来源：
+  common.py 从 synthetic_metadata.npy 读取 r_median，如果没有则默认 1.8。
+
+
+4.2 滑动窗口预测
+--------------------------------------------------------------------------------
+
+窗口：
+  256 × 256
+
+步长：
+  64
+
+融合权重：
+  二维线性 blend_window，边缘权重 0.15。
+
+网络输出：
+
+    residual_norm = model(narrow_norm_patch)
+
+多个 patch 融合后得到整张 inline 的 residual_norm。
+
+
+4.3 残差后处理与宽频重建
+--------------------------------------------------------------------------------
+
+首先对归一化空间的残差做残差频带保护：
+
+    residual_norm = bandpass_section(residual_norm, DT, RESIDUAL_POST_BAND)
+
+频带：
+
+    RESIDUAL_POST_BAND = (25.0, 35.0, 55.0, 75.0)
+
+重建：
+
+    wide_norm = narrow_norm + residual_norm
+    wide_pred = wide_norm * narrow_scale * R_MEDIAN
+    residual_pred = wide_pred - narrow_raw
+
+然后对真实振幅空间中的 residual_pred 做目标频带增益：
+
+    residual_pred = targeted_gain_correction(
+        residual_pred,
+        band_low=35,
+        band_high=75,
+        target_ratio=0.35,
+        max_gain=2.0
+    )
+
+最终：
+
+    wide_pred = narrow_raw + residual_pred
+
+
+4.4 推理输出
+--------------------------------------------------------------------------------
+
+当前最新输出前缀：
+  kriging_v1
+
+输出文件：
+  13_kriging/data/kriging_v1_narrow_input.npy
+  13_kriging/data/kriging_v1_residual_prediction.npy
+  13_kriging/data/kriging_v1_wide_prediction.npy
+  13_kriging/data/kriging_v1_wide_reference.npy
+
+文件尺寸：
+  每个约 1.03 GB。
+
+生成时间：
+  2026-06-15 02:49:31
+
+
+================================================================================
+五、评估与当前结果
+================================================================================
+
+5.1 评估指标
+--------------------------------------------------------------------------------
+
+03_evaluate.py 使用：
+  - MAE
+  - MSE
+  - RMSE
+  - PSNR
+  - Pearson correlation
+  - 35-80 Hz 高频振幅占比
+  - spectrum L1 distance
+
+频谱计算方式：
+  对 cube 每个 inline 沿时间轴做 rFFT，求振幅绝对值，累加所有 trace 后归一化到最大值为 1。
+
+
+5.2 kriging_v1 四类频谱结果
+--------------------------------------------------------------------------------
+
+输出图：
+  13_kriging/figures/kriging_v1_four_spectra.png
+
+输出表：
+  13_kriging/figures/kriging_v1_four_spectra.csv
+  13_kriging/figures/kriging_v1_four_spectra_stats.csv
+
+统计结果：
+
+  数据                  主峰频率(Hz)     35-80 Hz 占比
+  ----------------------------------------------------------------
+  预测残差              41.67           0.5378
+  最终预测              25.43           0.3484
+  低通数据              24.35           0.0000
+  宽频参考              60.61           0.5913
+
+观察：
+  - 残差本身主要集中在高频补偿频带，主峰约 41.67 Hz。
+  - 最终预测相比低通输入已经恢复部分 35-80 Hz 能量。
+  - 最终预测的 35-80 Hz 占比 0.3484，仍明显低于 F3 宽频参考的 0.5913。
+  - F3 宽频参考在 60 Hz 附近有明显强峰，当前预测对 55-75 Hz 的补偿仍不足。
+
+
+5.3 高通残差重组实验
+--------------------------------------------------------------------------------
+
+新增脚本：
+  13_kriging/code/05_highpass_residual_recombine.py
+
+目的：
+  检查预测残差中低频成分是否削弱了最终结果的高频占比。
+
+处理方式：
+
+    residual_hp = highpass(residual_prediction)
+    new_prediction = lowpass_data + residual_hp
+
+高通参数：
+  cut1 = 30 Hz
+  cut2 = 35 Hz
+
+即：
+  30 Hz 以下置零；
+  30-35 Hz 线性过渡；
+  35 Hz 以上保留。
+
+输出数据：
+  13_kriging/data/kriging_v1_hp35_residual_prediction.npy
+  13_kriging/data/kriging_v1_hp35_wide_prediction.npy
+
+输出图：
+  13_kriging/figures/kriging_v1_hp35_section_compare.png
+  13_kriging/figures/kriging_v1_hp35_spectrum_compare.png
+
+统计结果：
+
+  数据                       主峰频率(Hz)     35-80 Hz 占比
+  ---------------------------------------------------------------------
+  低通数据                   24.35           0.0000
+  原始预测                   25.43           0.3484
+  高通残差重组预测           24.35           0.4804
+  宽频参考                   60.61           0.5913
+  原始残差                   41.67           0.5378
+  高通残差                   41.67           0.9504
+
+观察：
+  - 高通后残差的 35-80 Hz 占比提升到 0.9504，说明低频残差被有效去除。
+  - 重组预测的 35-80 Hz 占比从 0.3484 提升到 0.4804。
+  - 频谱更接近宽频参考，但仍低于 0.5913。
+  - 高频增强主要发生在 40-60 Hz，60 Hz 附近参考数据的强峰仍未完全补足。
+
+
+================================================================================
+六、当前已知问题与后续方向
+================================================================================
+
+6.1 训练与推理尺度仍有潜在不一致
+--------------------------------------------------------------------------------
+
+训练：
+  input_norm = clean_narrow / percentile(abs(clean_wide), 99)
+
+推理：
+  narrow_norm = narrow_raw / percentile(abs(narrow_raw), 99)
+  wide_pred = wide_norm * narrow_scale * R_MEDIAN
+
+问题：
+  推理阶段无法直接得到 F3 宽频目标的 shared_scale，只能使用 narrow_scale 并用 R_MEDIAN 补偿。
+  如果 R_MEDIAN 估计偏小或随空间变化明显，就会影响最终宽频振幅和残差能量。
+
+可能方向：
+  - 对 R_MEDIAN 做空间自适应估计。
+  - 从 F3 原始宽频数据中估计 reference-scale，但这在真实未知宽频应用场景中不可直接使用。
+  - 在训练时模拟“推理只有窄频尺度”的归一化方式，使训练和推理完全一致。
+
+
+6.2 55-75 Hz 补偿仍偏弱
+--------------------------------------------------------------------------------
+
+当前最终预测：
+  35-80 Hz 占比 = 0.3484
+
+高通残差重组后：
+  35-80 Hz 占比 = 0.4804
+
+F3 宽频参考：
+  35-80 Hz 占比 = 0.5913
+
+问题：
+  即使去掉残差低频部分，60 Hz 附近能量仍不足。
+
+可能方向：
+  - 提高 loss_er 的权重。
+  - 将 residual_band_loss 的关注频带从 25-75 Hz 改成更偏高频，如 35-80 Hz。
+  - 在推理后处理上尝试 55-75 Hz 目标增益，而不是整体 35-75 Hz 统一增益。
+  - 训练样本中增强高频标签的 55-75 Hz 能量，使网络见到更多此频段的有效残差。
+
+
+6.3 残差低频泄漏
+--------------------------------------------------------------------------------
+
+原始残差主峰在 41.67 Hz，但仍含有较多 35 Hz 以下能量。
+
+高通后处理表明：
+  去除 35 Hz 以下残差后，最终预测频谱更接近宽频参考。
+
+可能方向：
+  - 在训练输出端直接加入固定高通/带通层。
+  - 将残差目标在训练前显式带通化。
+  - 增大 loss_mean 或加入低频抑制项，惩罚 residual_pred 在 0-30 Hz 的能量。
+
+
+6.4 低通输入主峰主导最终预测
+--------------------------------------------------------------------------------
+
+高通残差重组预测的主峰仍为 24.35 Hz。
+
+说明：
+  最终结果的主峰仍由低通输入控制，高频补偿虽然提高了占比，但没有改变主导频率结构。
+
+可能方向：
+  - 后处理上降低低频输入权重，例如 wide_pred = lowpass_weight * narrow + residual。
+  - 训练时显式学习宽频-低频的相对能量比例。
+  - 将最终结果的频谱目标加入训练约束，而不只约束残差频带。
+
+
+================================================================================
+七、实验编号对照
+================================================================================
+
+01_basic_strategy
+  基础框架：井数据估计子波、合成样本、UNet-CBAM、F3 推理。
+
+07_residual_band_constrained
+  残差频带约束训练方案：网络预测 residual，损失在残差频带上做振幅/相位/能量占比约束。
+
+09_shared_norm_lateral_smooth
+  样本生成改进：shared-scale 归一化、Q 滤波位置调整、横向平滑等。
+
+13_kriging
+  当前最新代码方案：多井克里金反射系数建模、F3 振幅包络调制、shared-scale 样本、残差网络训练、kriging_v1 F3 推理。
+
+14_基于13_kriging最新代码技术记录.txt
+  当前文档：记录 13_kriging 最新代码、推理结果和高通残差后处理观察。

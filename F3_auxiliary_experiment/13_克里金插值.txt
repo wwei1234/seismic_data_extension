@@ -1,0 +1,365 @@
+样本生成改进方案——多井克里金插值 + 振幅调制
+================================================================================
+
+背景
+----
+当前合成样本存在以下问题：
+1. 单井反射系数横向拉伸，导致横向振幅完全均匀，缺乏横向变化
+2. 纵向振幅单调衰减（仅Q滤波效果），缺乏真实地层的强弱韵律
+3. 缺少复杂地震相（尖灭、横向不连续等）
+
+改进思路：
+1. 用多井序贯高斯模拟（克里金插值+随机扰动）替代单井横向拉伸
+2. 用F3低通数据的振幅包络调制合成剖面的振幅分布
+3. 保留原有的构造扰动（倾斜、褶皱、断层）叠加在新的反射系数剖面上
+
+
+================================================================================
+
+修改一：新增序贯高斯模拟函数（在 signal_utils.py 或新建 geology_utils.py）
+--------------------------------------------------------------------------------
+
+    import numpy as np
+
+    def variogram_spherical(h, nugget=0.01, sill=1.0, range_=300):
+        """
+        球状变差函数模型（最常用的地质变差函数）
+        h      : 距离（道数）
+        nugget : 块金值，控制短程随机性
+        sill   : 基台值，最大变差
+        range_ : 变程，超过此距离相关性消失
+        """
+        h = np.asarray(h, dtype=np.float64)
+        gamma = np.where(
+            h <= range_,
+            nugget + (sill - nugget) * (
+                1.5 * (h / range_) - 0.5 * (h / range_) ** 3
+            ),
+            sill,
+        )
+        return gamma
+
+
+    def kriging_1d(well_positions, well_values, query_positions,
+                   nugget=0.01, sill=1.0, range_=300):
+        """
+        一维普通克里金插值
+        返回估计值和克里金方差
+        """
+        n = len(well_positions)
+        h_mat = np.abs(well_positions[:, None] - well_positions[None, :])
+        C_mat = sill - variogram_spherical(h_mat, nugget, sill, range_)
+
+        A = np.zeros((n + 1, n + 1))
+        A[:n, :n] = C_mat
+        A[:n, n] = 1.0
+        A[n, :n] = 1.0
+
+        mean_est = np.zeros(len(query_positions))
+        krig_var = np.zeros(len(query_positions))
+
+        for i, x in enumerate(query_positions):
+            h_vec = np.abs(well_positions - x)
+            c_vec = sill - variogram_spherical(h_vec, nugget, sill, range_)
+            b = np.append(c_vec, 1.0)
+            try:
+                w = np.linalg.solve(A, b)
+            except np.linalg.LinAlgError:
+                w = np.ones(n + 1) / n
+            mean_est[i] = np.dot(w[:n], well_values)
+            krig_var[i] = max(
+                0.0, sill - np.dot(w[:n], c_vec) - w[n]
+            )
+
+        return mean_est, krig_var
+
+
+    def sequential_gaussian_simulation(well_positions, well_values,
+                                        query_positions, rng,
+                                        nugget=0.01, sill=1.0, range_=300):
+        """
+        序贯高斯模拟：克里金估计 + 随机扰动
+        每次调用得到不同的等概率实现，适合生成多样化训练样本
+        """
+        mean_est, krig_var = kriging_1d(
+            well_positions, well_values, query_positions,
+            nugget, sill, range_,
+        )
+        std_est = np.sqrt(np.maximum(krig_var, 0.0))
+        return mean_est + rng.normal(0.0, 1.0, len(query_positions)) * std_est
+
+
+================================================================================
+
+修改二：新增多井反射系数剖面生成函数（替代原来的单井横向拉伸）
+--------------------------------------------------------------------------------
+
+    def build_multiwell_section_kriging(reflectivities, well_names_subset,
+                                         target_width, rng,
+                                         nugget=0.01, sill=1.0, range_=300):
+        """
+        用序贯高斯模拟在多口井之间插值，生成横向变化的反射系数剖面
+
+        well_names_subset : 本次使用的井名列表（从全部井中随机选取）
+        target_width      : 剖面道数
+        range_            : 横向相关距离（道数），建议从F3数据估计或设为200-400
+        """
+        n_wells = len(well_names_subset)
+        n_time  = min(len(reflectivities[w]) for w in well_names_subset)
+
+        # 把选中的井随机排列在虚拟inline上，随机打乱顺序增加多样性
+        order = rng.permutation(n_wells)
+        ordered_wells = [well_names_subset[i] for i in order]
+
+        # 随机分配井的横向位置（端点固定，中间随机）
+        positions = np.sort(
+            rng.uniform(0, target_width - 1, size=n_wells)
+        ).astype(np.float64)
+        positions[0]  = 0.0
+        positions[-1] = float(target_width - 1)
+
+        x_query = np.arange(target_width, dtype=np.float64)
+        section = np.zeros((n_time, target_width), dtype=np.float32)
+
+        for it in range(n_time):
+            rc_values = np.array(
+                [reflectivities[w][it] for w in ordered_wells],
+                dtype=np.float64,
+            )
+
+            if n_wells == 2:
+                # 两口井直接线性插值（克里金退化为线性）
+                section[it, :] = np.interp(x_query, positions, rc_values)
+            else:
+                section[it, :] = sequential_gaussian_simulation(
+                    positions, rc_values, x_query, rng,
+                    nugget=nugget, sill=sill, range_=range_,
+                )
+
+        return section.astype(np.float32)
+
+
+================================================================================
+
+修改三：新增F3振幅包络提取和调制函数
+--------------------------------------------------------------------------------
+
+    from scipy.ndimage import uniform_filter
+
+    def extract_amplitude_envelope(section, smooth_t=30, smooth_x=100):
+        """
+        从地震剖面提取局部RMS振幅包络
+        section  : 二维地震剖面 (nt, nx)
+        smooth_t : 时间方向平滑窗口（采样点数）
+        smooth_x : 道方向平滑窗口（道数）
+        返回归一化包络（均值为1，只保留相对强弱分布）
+        """
+        rms = uniform_filter(
+            section.astype(np.float64) ** 2,
+            size=(smooth_t, smooth_x),
+        ) ** 0.5
+        envelope = rms / (rms.mean() + 1e-8)
+        return envelope.astype(np.float32)
+
+
+    def apply_amplitude_envelope(synthetic_wide, synthetic_narrow,
+                                  f3_envelope, rng):
+        """
+        从F3包络里随机取一块，同时调制宽频和窄频合成剖面的振幅分布
+        两者使用同一个包络区域，保持相对幅值关系不变
+        """
+        nt_syn, nx_syn = synthetic_wide.shape
+        nt_f3, nx_f3   = f3_envelope.shape
+
+        t_max = max(1, nt_f3 - nt_syn)
+        x_max = max(1, nx_f3 - nx_syn)
+        t0 = rng.integers(0, t_max)
+        x0 = rng.integers(0, x_max)
+
+        patch = f3_envelope[t0:t0 + nt_syn, x0:x0 + nx_syn]
+
+        return (synthetic_wide   * patch).astype(np.float32), \
+               (synthetic_narrow * patch).astype(np.float32)
+
+
+================================================================================
+
+修改四：修改 02_generate_synthetic_dataset.py 的 main 函数
+--------------------------------------------------------------------------------
+
+在 main 函数开头，加载F3数据并提取振幅包络（只做一次）：
+
+    from segy_reader import read_segy
+    from config import SEGY_PATH, SHOTNUM, NARROW_BAND
+    from signal_utils import zero_phase_filter_section
+
+    # 读取F3数据，取中间若干个inline取平均，得到代表性剖面
+    f3_cube = read_segy(SEGY_PATH, shotnum=SHOTNUM)
+    mid = f3_cube.shape[0] // 2
+    f3_section = f3_cube[mid].astype(np.float32)   # shape: (nt, nx)
+
+    # 用窄频数据提取包络（推理时也只有窄频）
+    f3_lowpass = zero_phase_filter_section(f3_section, DT, NARROW_BAND)
+    f3_envelope = extract_amplitude_envelope(f3_lowpass, smooth_t=30, smooth_x=100)
+
+    # 估计横向相关距离（用于克里金 range_ 参数）
+    # 简单方法：取F3低通数据相邻道相关系数降到0.5时的距离
+    corr_profile = np.array([
+        float(np.corrcoef(f3_lowpass[:, 0], f3_lowpass[:, lag])[0, 1])
+        for lag in range(1, min(500, f3_lowpass.shape[1]))
+    ])
+    range_estimate = int(np.argmax(corr_profile < 0.5)) + 1
+    range_estimate = max(100, min(range_estimate, 500))  # 限制在合理范围
+    print(f"估计横向相关距离：{range_estimate} 道")
+
+在原来的剖面生成循环里，替换单井拉伸为多井克里金：
+
+    well_names_all = list(reflectivities.keys())  # 全部4口井
+
+    for section_idx in range(args.sections_per_wavelet):
+
+        # 随机决定用几口井（2、3或4口）
+        n_use = rng.integers(2, len(well_names_all) + 1)
+        subset = rng.choice(
+            well_names_all, size=n_use, replace=False
+        ).tolist()
+
+        # ── 修改：多井克里金插值替代单井横向拉伸 ──
+        base_reflectivity = build_multiwell_section_kriging(
+            reflectivities,
+            subset,
+            args.section_width,
+            rng,
+            nugget=0.01,
+            sill=1.0,
+            range_=range_estimate,
+        )
+
+        # 在多井插值结果上叠加构造扰动（原有逻辑保留）
+        base_reflectivity, structure = add_structural_perturbation(
+            base_reflectivity, rng
+        )
+        # ── 修改结束 ──
+
+        # Q滤波作用在合成道上（之前已改）
+        clean_wide_raw   = convolve_reflectivity(base_reflectivity, wavelet)
+        clean_narrow_raw = zero_phase_filter_section(clean_wide_raw, DT, NARROW_BAND)
+        clean_wide   = apply_time_variant_q_filter_section(clean_wide_raw,   DT, ...)
+        clean_narrow = apply_time_variant_q_filter_section(clean_narrow_raw, DT, ...)
+
+        # ── 新增：用F3包络调制振幅分布 ──
+        clean_wide, clean_narrow = apply_amplitude_envelope(
+            clean_wide, clean_narrow, f3_envelope, rng
+        )
+        # ── 新增结束 ──
+
+        # 归一化：用宽频p99做基准（之前已改）
+        shared_scale = float(np.percentile(np.abs(clean_wide), 99))
+        shared_scale = max(shared_scale, 1e-8)
+        input_norm = np.clip(
+            clean_narrow / shared_scale, -1.0, 1.0
+        ).astype(np.float32)
+        label_norm = np.clip(
+            clean_wide   / shared_scale, -1.0, 1.0
+        ).astype(np.float32)
+
+        # 归一化后加噪声
+        noise_level = noise_levels[section_idx % len(noise_levels)]
+        if noise_level > 0.0:
+            noise = rng.normal(
+                0.0, noise_level, size=input_norm.shape
+            ).astype(np.float32)
+            input_norm = np.clip(input_norm + noise, -1.0, 1.0).astype(np.float32)
+
+        # 记录归一化参数
+        input_min = label_min = -shared_scale
+        input_max = label_max =  shared_scale
+
+        # 后续切patch流程不变
+        ...
+
+
+================================================================================
+
+修改五：需要把原来的 build_structural_reflectivity 拆分
+--------------------------------------------------------------------------------
+
+原来的 build_structural_reflectivity 同时做了"单井横向拉伸"和"构造扰动"。
+现在多井插值已经生成了二维剖面，只需要在此基础上叠加构造扰动。
+
+把原函数里的时移和扰动部分单独提取为：
+
+    def add_structural_perturbation(section, rng):
+        """
+        在已有的二维反射系数剖面上叠加构造扰动
+        （倾斜、褶皱、断层、横向抖动）
+        逻辑和原 build_structural_reflectivity 中的时移部分完全一致
+        只是输入从一维反射系数改为已有的二维剖面
+        """
+        n_time, width = section.shape
+        x = np.arange(width, dtype=np.float32)
+        xc = (width - 1) / 2.0
+        t_axis = np.arange(n_time, dtype=np.float32)
+
+        # 以下逻辑和原函数完全一样
+        slope = rng.uniform(-0.08, 0.08)
+        shifts = slope * (x - xc)
+        # ... 褶皱、断层、lateral_jitter 等（从原函数复制）
+
+        # 时移改用最近邻（保持稀疏性）
+        result = np.zeros_like(section)
+        for ix, shift in enumerate(shifts):
+            sample_pos = t_axis + shift
+            idx = np.rint(sample_pos).astype(np.int32)
+            valid = (idx >= 0) & (idx < n_time)
+            result[valid, ix] = section[idx[valid], ix]
+
+        # 横向平滑消除跳变毛刺
+        from scipy.ndimage import uniform_filter1d
+        result = uniform_filter1d(result, size=3, axis=1)
+
+        return result.astype(np.float32), structure_info
+
+
+================================================================================
+
+关键参数说明
+--------------------------------------------------------------------------------
+
+克里金参数：
+    nugget  = 0.01   # 块金值，控制短程随机性，不宜过大
+    sill    = 1.0    # 基台值，固定为1（反射系数归一化后）
+    range_  = 由F3数据自动估计，一般在200-400道之间
+
+振幅包络参数：
+    smooth_t = 30    # 时间方向平滑窗口（采样点）
+    smooth_x = 100   # 道方向平滑窗口（道数）
+
+多井选取：
+    每次随机从4口井中选2、3或4口
+    选2口时退化为线性插值
+    选3-4口时使用序贯高斯模拟
+
+归一化：
+    用宽频clean_wide的p99做基准（不用窄频）
+    保证宽频标签不被clip截断
+
+
+================================================================================
+
+预期效果
+--------------------------------------------------------------------------------
+
+改进前：
+    横向振幅完全均匀（单井拉伸）
+    纵向单调衰减（仅Q滤波）
+    缺少横向不连续和复杂地震相
+
+改进后：
+    横向振幅自然变化（来自井间真实差异+克里金随机扰动）
+    纵向韵律来自F3真实振幅包络（强弱交替）
+    井间反射系数差异大的层位自然产生尖灭效果
+    每次生成结果不同（序贯模拟的随机性），训练样本多样性大幅提升
+
+
+================================================================================

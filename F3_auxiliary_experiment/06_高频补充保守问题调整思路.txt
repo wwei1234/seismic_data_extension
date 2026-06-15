@@ -1,0 +1,218 @@
+高频补充保守问题调整思路
+================================================================================
+
+一、问题诊断
+--------------------------------------------------------------------------------
+
+当前核心问题：高频补充偏保守，35-80 Hz 能量严重不足。
+
+数据对比：
+    原始 F3 高频能量占比：0.5913
+    偏置修正方案结果：    0.1509
+    差距接近 4 倍
+
+差距如此之大，说明问题不只是损失函数权重设置的问题，很可能是训练数据本身
+的频谱分布与 F3 差距过大，导致网络忠实学习了训练标签的频谱特性，而训练标
+签本身高频能量就不足。
+
+
+================================================================================
+
+二、调整方向（按优先级排列）
+--------------------------------------------------------------------------------
+
+【第一优先】诊断：对比训练标签与 F3 的频谱分布
+----------------------------------------------
+
+这是最重要的一步，在此之前所有调整都是盲目的。
+
+代码：
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    def compare_spectrum(synth_wide, f3_original, fs=500):
+        def mean_spectrum(data):
+            specs = []
+            for trace in data.T:
+                S = np.abs(np.fft.rfft(trace))
+                specs.append(S)
+            return np.mean(specs, axis=0)
+
+        freqs = np.fft.rfftfreq(synth_wide.shape[0], 1/fs)
+
+        plt.figure(figsize=(10, 4))
+        plt.plot(freqs, mean_spectrum(synth_wide), label='合成宽频标签')
+        plt.plot(freqs, mean_spectrum(f3_original), label='F3原始参考')
+        plt.axvspan(35, 80, alpha=0.2, color='red', label='目标高频带')
+        plt.xlim(0, 120)
+        plt.legend()
+        plt.xlabel('频率 (Hz)')
+        plt.title('训练标签 vs 测试参考 频谱对比')
+        plt.show()
+
+判断逻辑：
+
+    若训练标签在 35-80 Hz 的能量也远低于 F3
+    → 问题出在训练数据生成阶段，优先做第二优先（子波高频增广）
+
+    若训练标签的频谱与 F3 接近
+    → 问题出在网络预测保守，优先做第三优先（频率加权 loss）
+
+
+【第二优先】子波高频增广（需重新训练）
+--------------------------------------
+
+只有四口井的子波，高频端能量特性受限于测井和井旁地震道质量。
+通过在子波高频端随机增益，扩展训练样本的高频能量分布，让网络见过更多
+高频能量的样本，推理时对高频预测就不会那么保守。
+
+代码：
+
+    def augment_wavelet_highfreq(wavelet, fs=500,
+                                  boost_above=30,
+                                  boost_factor_range=(1.0, 2.5)):
+        W = np.fft.rfft(wavelet)
+        freqs = np.fft.rfftfreq(len(wavelet)) * fs
+
+        factor = np.random.uniform(*boost_factor_range)
+        gain = np.where(freqs > boost_above, factor, 1.0)
+
+        W_aug = W * gain
+        return np.fft.irfft(W_aug, n=len(wavelet))
+
+使用方式：
+    每次生成训练样本时，对宽频子波随机应用该增广，
+    使训练标签的高频能量分布具有更大的动态范围。
+
+boost_factor_range 建议从 (1.0, 2.0) 开始，
+观察训练标签频谱后再逐步调整上限。
+
+
+【第三优先】频率加权损失函数（需重新训练）
+------------------------------------------
+
+当前 loss 对高低频一视同仁，而低频能量通常更强，网络自然优先拟合低频。
+加入频率加权，强制网络更关注高频段的误差。
+
+代码：
+
+    def freq_weighted_loss(pred, label, fs=500,
+                            boost_above=35, boost_factor=3.0):
+        # 沿时间轴做 FFT
+        P = torch.fft.rfft(pred, dim=2)
+        L = torch.fft.rfft(label, dim=2)
+
+        freqs = torch.fft.rfftfreq(pred.shape[2]) * fs
+
+        # 35 Hz 以上权重提高 boost_factor 倍
+        weights = torch.ones_like(freqs)
+        weights[freqs > boost_above] = boost_factor
+        weights = weights.view(1, 1, -1, 1)  # 广播到 (B, C, F, W)
+
+        amp_diff = torch.abs(P.abs() - L.abs())
+        loss = (amp_diff * weights).mean()
+        return loss
+
+建议 boost_factor 从 2.0 开始，逐步增大到 5.0，
+每次调整后观察验证集高频能量占比的变化。
+
+注意：boost_factor 过大可能导致低频质量下降，需要在高频能量和整体相关性
+之间找到平衡点。
+
+
+【第四优先】推理阶段频带增益校正（无需重新训练，可立即验证）
+------------------------------------------------------------
+
+不需要重新训练，直接在后处理里对预测残差的高频段做增益校正，
+是快速验证高频补充潜力的最简单方法。
+
+代码：
+
+    def spectral_gain_correction(residual_pred, narrow_input,
+                                  target_ratio=0.4, fs=500):
+        wide_pred = narrow_input + residual_pred
+        S = np.abs(np.fft.rfft(wide_pred, axis=0))
+        freqs = np.fft.rfftfreq(wide_pred.shape[0]) * fs
+
+        total_energy = S.mean()
+        high_energy = S[freqs > 35].mean()
+        current_ratio = high_energy / total_energy
+
+        if current_ratio < target_ratio:
+            gain_needed = target_ratio / current_ratio
+            gain_needed = min(gain_needed, 3.0)  # 限制最大增益
+
+            R = np.fft.rfft(residual_pred, axis=0)
+            R[freqs > 35] *= gain_needed
+            residual_corrected = np.fft.irfft(
+                R, n=residual_pred.shape[0], axis=0
+            )
+            return residual_corrected
+
+        return residual_pred
+
+注意：
+    target_ratio 不要直接设到 0.59（F3 原始水平），从 0.3 开始试；
+    增益过大会同步放大高频噪声，需要视觉检查剖面质量。
+
+
+【第五优先】确认低通截止频率一致性（无需重新训练）
+-------------------------------------------------
+
+测试流程：
+    F3 原始 → 低通滤波(截止25-35Hz) → 网络输入 → 预测残差 → 加回
+
+检查要点：
+    训练时窄频子波的截止频率：3-6-25-35 Hz
+    推理时对 F3 做低通滤波的截止频率：是否严格一致？
+
+如果两者截止频率有差异（哪怕几赫兹），输入分布就会偏移，
+网络输出的残差会不稳定。
+
+验证方法：
+    分别画出一条合成窄频道和一条 F3 低通道的振幅谱，叠加对比，
+    看截止位置是否完全重合。
+
+
+================================================================================
+
+三、各调整方向对比
+--------------------------------------------------------------------------------
+
+调整方向                    需要重新训练    预期改善幅度    风险
+--------------------------------------------------------------------
+诊断：频谱对比              否（诊断步骤）  —               无
+子波高频增广                是              高              低
+频率加权 loss               是              中高            可能引入不稳定
+推理阶段增益校正            否              中              可能放大噪声
+检查低通截止一致性          否              中（若有问题）  无
+--------------------------------------------------------------------
+
+
+================================================================================
+
+四、建议操作顺序
+--------------------------------------------------------------------------------
+
+第一步：运行 compare_spectrum
+    对比合成宽频标签和 F3 原始数据在 35-80 Hz 的能量差距
+    → 根据结果判断问题出在数据生成还是网络训练
+
+第二步：推理阶段增益校正（不需要重训练）
+    快速验证高频补充的上限潜力
+    target_ratio 从 0.3 开始，逐步增大，同时目视检查剖面质量
+
+第三步：确认 F3 低通截止和训练窄频截止一致
+    排除输入分布偏移的可能性
+
+第四步：根据第一步诊断结果选择路线
+    若训练标签高频不足 → 子波高频增广 + 重新生成训练数据 + 重新训练
+    若训练标签高频充足 → 提高频率加权 loss 权重 + 重新训练
+
+第五步：重训练后评价
+    对比 35-80 Hz 高频能量占比、相关系数、MAE/RMSE 的变化
+    在高频补充和整体相关性之间找到最优平衡点
+
+
+================================================================================

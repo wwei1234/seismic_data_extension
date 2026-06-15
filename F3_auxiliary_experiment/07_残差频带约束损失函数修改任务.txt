@@ -1,0 +1,148 @@
+代码修改任务说明——残差频带约束损失函数
+================================================================================
+
+背景
+----
+当前实验目录：highfreq_conservative_adjustment_experiment
+
+当前问题：网络预测的高频残差能量不足（35-80Hz 占比只有 0.1780，目标是接近
+0.59），原因是损失函数在全频信号上做加权，低频能量太强导致高频梯度被压制。
+
+核心改变：把频率约束从"对全频预测加权"改为"直接约束残差频带"。
+残差信号本身没有低频，loss 天然只关注补频带，不存在低频大头抢梯度的问题。
+
+
+================================================================================
+
+修改一：新增残差频带损失函数
+--------------------------------------------------------------------------------
+
+在损失函数文件中新增以下两个函数：
+
+    def residual_band_loss(pred_residual, label_residual, fs=500):
+        """
+        只约束残差频带（25-75Hz）内的幅度谱和相位匹配
+        不对全频做加权，直接盯住补频带
+        """
+        P = torch.fft.rfft(pred_residual, dim=2)
+        L = torch.fft.rfft(label_residual, dim=2)
+
+        freqs = torch.fft.rfftfreq(pred_residual.shape[2]) * fs
+
+        band_mask = (freqs >= 25) & (freqs <= 75)
+
+        P_band = P[:, :, band_mask, :]
+        L_band = L[:, :, band_mask, :]
+
+        loss_amp = torch.abs(P_band.abs() - L_band.abs()).mean()
+
+        phase_diff = torch.angle(P_band) - torch.angle(L_band)
+        loss_phase = (1 - torch.cos(phase_diff)).mean()
+
+        return loss_amp + 0.3 * loss_phase
+
+
+    def residual_energy_ratio_loss(pred_residual, label_residual, fs=500):
+        """
+        约束预测残差在 35-75Hz 的能量占比接近标签残差的能量占比
+        只惩罚高频不足，不惩罚高频过多（不对称损失）
+        """
+        def band_energy_ratio(x, freqs, low=35, high=75):
+            S = torch.fft.rfft(x, dim=2).abs()
+            total = S.mean(dim=(2, 3), keepdim=True) + 1e-8
+            band_mask = (freqs >= low) & (freqs <= high)
+            band = S[:, :, band_mask, :].mean(dim=(2, 3), keepdim=True)
+            return band / total
+
+        freqs = torch.fft.rfftfreq(pred_residual.shape[2]) * fs
+
+        ratio_pred  = band_energy_ratio(pred_residual, freqs)
+        ratio_label = band_energy_ratio(label_residual, freqs)
+
+        loss = torch.relu(ratio_label - ratio_pred).mean()
+        return loss
+
+
+================================================================================
+
+修改二：替换训练循环中的总损失计算
+--------------------------------------------------------------------------------
+
+找到原来的 loss 计算部分，替换为：
+
+    loss_wide   = F.l1_loss(wide_pred, wide_label)
+    loss_res_l1 = F.l1_loss(pred_residual, label_residual)
+    loss_mean   = pred_residual.mean(dim=(-2, -1)).abs().mean()
+    loss_rb     = residual_band_loss(pred_residual, label_residual)
+    loss_er     = residual_energy_ratio_loss(pred_residual, label_residual)
+
+    loss = (1.0 * loss_wide
+          + 0.2 * loss_res_l1
+          + 0.1 * loss_mean
+          + 1.0 * loss_rb
+          + 0.5 * loss_er)
+
+注意：原来的 freq_weighted_loss（全频加权）直接去掉，不再使用。
+
+
+================================================================================
+
+修改三：替换推理阶段的增益校正函数
+--------------------------------------------------------------------------------
+
+把原来的增益校正函数替换为只对补频带（35-75Hz）做增益的精细版本：
+
+    def targeted_gain_correction(residual_pred, fs=500,
+                                  band_low=35, band_high=75,
+                                  target_ratio=0.35,
+                                  max_gain=2.0):
+        """
+        只对 35-75Hz 做增益校正，不动其他频段
+        max_gain 限制最大放大倍数，避免过度放大噪声
+        """
+        R = np.fft.rfft(residual_pred, axis=0)
+        freqs = np.fft.rfftfreq(residual_pred.shape[0]) * fs
+
+        S = np.abs(R)
+        total = S.mean() + 1e-8
+        band_mask = (freqs >= band_low) & (freqs <= band_high)
+        current_ratio = S[band_mask].mean() / total
+
+        if current_ratio < target_ratio:
+            gain = min(target_ratio / (current_ratio + 1e-8), max_gain)
+            R[band_mask] *= gain
+
+        return np.fft.irfft(R, n=residual_pred.shape[0], axis=0)
+
+
+================================================================================
+
+修改四：训练配置
+--------------------------------------------------------------------------------
+
+训练轮数：300 轮
+早停 patience：保持不变
+其余超参数（学习率、batch size）保持不变
+新实验保存到新目录，不覆盖原来的 bias_correction_experiment
+
+
+================================================================================
+
+训练完成后需要输出的评价指标
+--------------------------------------------------------------------------------
+
+与之前各轮保持一致，输出：
+    Corr（相关系数）
+    MAE
+    RMSE
+    35-80Hz 高频能量占比
+    频谱 L1
+
+同时输出：
+    剖面对比图
+    频谱对比图
+    训练曲线（分别画出 loss_wide、loss_rb、loss_er 三条曲线，
+              方便判断各项损失的收敛情况）
+
+
+================================================================================
