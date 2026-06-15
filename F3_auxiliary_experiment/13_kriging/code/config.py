@@ -11,7 +11,7 @@ FIGURE_DIR = ROOT / "figures"
 DT = 0.004
 PATCH_SIZE = 256
 PATCH_STRIDE = 64           # more patches for better training
-SYNTHETIC_SECTION_WIDTH = 922   # match F3 crossline count (SHOTNUM=651 gives 922)
+SYNTHETIC_SECTION_WIDTH = 951   # match F3 crossline headers: 300-1250 inclusive
 
 # ── Kriging ──
 KRIGING_NUGGET = 0.01
