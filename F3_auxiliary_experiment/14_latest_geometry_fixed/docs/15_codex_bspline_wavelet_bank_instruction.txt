@@ -1,0 +1,72 @@
+给 Codex 的最终指令
+
+基于现有 13_kriging 方案新建一个实验版本，命名为：
+
+14_bspline_wavelet_bank
+
+核心修改只放在“合成训练样本的宽频子波设计”上，不要大改网络和推理框架。
+
+最终方案如下：
+
+1. 保留 13_kriging 的整体流程：
+   - 多井 kriging 生成二维反射系数剖面；
+   - F3 低通数据振幅包络调制；
+   - 网络预测 residual；
+   - 推理时保持 low-pass input 不变，只加预测的 high-frequency residual；
+   - 最终结果：
+       wide_pred = lowpass_input + predicted_residual
+
+2. 不再只依赖井震估计子波生成 clean_wide。
+   原因是当前井震估计子波在 60 Hz 以上能量偏弱，会导致 synthetic wide label 和 residual target 的高频不足。
+
+3. 引入宽带 B 样条子波族作为 clean_wide 的合成子波。
+
+4. 不采用“窄频子波褶积生成输入、宽频子波褶积生成标签”的两个独立子波方案。
+   必须保持：
+       clean_wide = reflectivity * wide_wavelet
+       clean_narrow = lowpass(clean_wide, 3, 6, 25, 35)
+       residual_target = clean_wide - clean_narrow
+
+   这样可以保证：
+       clean_wide = clean_narrow + residual_target
+
+5. 宽频子波族至少包含以下几类：
+   - 原始井震估计子波 estimated_wavelet；
+   - 宽带 B 样条子波 1：目标频带约 3-6-55-70 Hz；
+   - 宽带 B 样条子波 2：目标频带约 3-6-65-80 Hz；
+   - 宽带 B 样条子波 3：目标频带约 3-6-75-90 Hz。
+
+6. 每个合成样本随机选择一个子波生成 clean_wide。
+   推荐先等概率随机选择，后续再根据结果调整权重。
+
+7. 训练目标仍然使用完整残差：
+       residual_target = clean_wide - clean_narrow
+
+   不要把 residual_target 硬切成纯 35-80 Hz。
+   因为当前低通频带是 3-6-25-35 Hz，25-35 Hz 是过渡带，如果只保留 35-80 Hz，会丢失 25-35 Hz 的补偿信息。
+
+8. 损失函数可以继续沿用当前 ResidualBandConstrainedLoss。
+   但建议把频谱约束重点放在：
+       25-35 Hz：过渡带补偿；
+       35-55 Hz：中高频补偿；
+       55-80 Hz：重点高频补偿。
+
+9. 推理阶段保持当前最新逻辑：
+       residual_pred = model(lowpass_input)
+       residual_pred = bandpass / highpass 后处理，只保留有效补偿频带
+       wide_pred = lowpass_input + residual_pred
+
+   注意：不要让任何全局尺度因子改变 lowpass_input 本身，低频主体必须保持不变。
+
+10. 新增诊断图：
+   每次生成数据和推理后，都画以下频谱：
+       - wavelet_bank 中各子波频谱；
+       - synthetic_wide 频谱；
+       - synthetic_narrow 频谱；
+       - synthetic_residual = synthetic_wide - synthetic_narrow 频谱；
+       - predicted_residual 频谱；
+       - final wide_pred 频谱；
+       - F3 reference 频谱只用于评价，不参与训练或标签构造。
+
+最终目的：
+通过宽带 B 样条子波族增强 synthetic wide label 中 55-80 Hz 的有效高频，使模型能够学习更强、更合理的高频残差；同时保留当前方案“低频保持 + 高频残差补偿”的物理闭合关系。
