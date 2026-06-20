@@ -1,0 +1,31 @@
+Evaluation prefix: wide17_200_crossline_wells
+Section axis: crossline
+Section numbers: 336, 387, 848, 1007
+
+Low-pass input vs reference
+  MAE: 1373.837180
+  RMSE: 1952.165431
+  MSE: 3810949.868832
+  PSNR: 23.724562
+  Correlation: 0.588366
+  high_freq_ratio_35_80: 0.000000
+  spectrum_l1_vs_reference: 0.372290
+
+Direct wideband prediction vs reference
+  MAE: 1624.814922
+  RMSE: 2259.885329
+  MSE: 5107081.702424
+  PSNR: 22.453166
+  Correlation: 0.422570
+  high_freq_ratio_35_80: 0.443917
+  spectrum_l1_vs_reference: 0.171131
+
+Per-crossline spatial metrics:
+  crossline, baseline_MAE, prediction_MAE, baseline_RMSE, prediction_RMSE, baseline_Correlation, prediction_Correlation
+  336, 1369.263952, 1612.651355, 1954.637532, 2269.519637, 0.571278, 0.394069
+  387, 1375.246489, 1583.538389, 1966.284597, 2223.061711, 0.556926, 0.405431
+  848, 1382.055243, 1651.149318, 1959.156156, 2269.661948, 0.613647, 0.459919
+  1007, 1368.783035, 1651.920624, 1928.373312, 2276.892334, 0.606483, 0.425596
+
+Section figure: C:\Users\Admin\.config\superpowers\worktrees\地震数据拓频\experiment-17-wideband\F3_auxiliary_experiment\17_wideband_direct_prediction\figures\预测评价\wide17_200_crossline_wells_sections.png
+Spectrum figure: C:\Users\Admin\.config\superpowers\worktrees\地震数据拓频\experiment-17-wideband\F3_auxiliary_experiment\17_wideband_direct_prediction\figures\预测评价\wide17_200_crossline_wells_spectra.png
