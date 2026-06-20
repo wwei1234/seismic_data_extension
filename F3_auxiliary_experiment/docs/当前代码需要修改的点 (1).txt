@@ -1,0 +1,515 @@
+当前代码需要修改的点
+====================
+
+实验名称建议：bspline_v3 / 16_fidelity_constrained_bspline_residual
+整理目的：记录当前代码中仍未完成、需要下一轮修改的关键点，便于交给 Codex 修改。
+
+
+一、最高优先级：训练与推理归一化不一致
+--------------------------------------
+
+1. 当前问题
+
+当前 02_generate_synthetic_dataset.py 中训练样本归一化尺度仍来自 clean_wide 的 99 分位数：
+
+    shared_scale = float(np.percentile(np.abs(clean_wide), 99))
+
+但 02_predict_f3.py 推理时只能使用实际低通输入 narrow_raw 的 99 分位数：
+
+    narrow_scale = float(np.percentile(np.abs(narrow_raw), 99))
+
+这会导致训练与推理尺度不一致。
+
+2. 修改目标
+
+训练和推理都统一使用窄频输入的 p99 尺度。
+
+3. 修改位置
+
+文件：02_generate_synthetic_dataset.py
+
+将：
+
+    shared_scale = float(np.percentile(np.abs(clean_wide), 99))
+
+改为：
+
+    shared_scale = float(np.percentile(np.abs(clean_narrow), 99))
+    shared_scale = max(shared_scale, 1e-8)
+
+并保持：
+
+    clean_input_norm = np.clip(clean_narrow / shared_scale, -1.0, 1.0).astype(np.float32)
+    wide_norm = np.clip(clean_wide / shared_scale, -1.0, 1.0).astype(np.float32)
+    label_norm = np.clip(wide_norm - clean_input_norm, -1.0, 1.0).astype(np.float32)
+
+4. 技术目的
+
+保证训练阶段和推理阶段的尺度定义一致，避免网络在训练中学习到 wide_p99 尺度，而推理时输入 narrow_p99 尺度导致残差幅值偏差。
+
+
+二、最高优先级：去掉推理阶段 R_MEDIAN
+-----------------------------------
+
+1. 当前问题
+
+common.py 中仍保留：
+
+    R_MEDIAN = _meta.get("r_median", 1.8)
+
+02_predict_f3.py 中仍导入并使用 R_MEDIAN：
+
+    wide_pred = wide_norm * narrow_scale * R_MEDIAN
+    residual_pred = wide_pred - narrow_raw
+
+这会改变最终结果的低频主体尺度，不利于保真。
+
+2. 修改目标
+
+推理阶段不再使用任何 wide/narrow 全局比例因子。
+网络只预测 residual，低频主体 narrow_raw 必须原样保留。
+
+3. 修改位置
+
+文件：02_predict_f3.py
+
+删除 common 导入中的 R_MEDIAN。
+
+将：
+
+    wide_norm = narrow_norm + residual_norm
+    wide_pred = wide_norm * narrow_scale * R_MEDIAN
+    residual_pred = wide_pred - narrow_raw
+
+改为：
+
+    residual_pred = residual_norm * narrow_scale
+
+后续保持：
+
+    residual_pred = targeted_gain_correction(...)
+    wide_direct = narrow_raw + residual_pred
+    residual_hp = highpass_section(residual_pred, DT, args.hp_cut1, args.hp_cut2)
+    wide_highpass = narrow_raw + residual_hp
+
+4. 技术目的
+
+保证最终预测结果满足：
+
+    wide_pred = narrow_raw + residual_pred
+
+其中 narrow_raw 不被任何全局尺度因子修改。
+
+
+三、高优先级：删除上下翻转数据增强
+------------------------------
+
+1. 当前问题
+
+01_train.py 中 ResidualPatchDataset.__getitem__ 当前包含上下翻转：
+
+    if np.random.rand() < 0.5:
+        x = np.flip(x, axis=0)
+        r = np.flip(r, axis=0)
+
+axis=0 是时间方向，上下翻转会破坏浅层到深层的时间顺序。
+
+2. 修改目标
+
+只保留横向左右翻转，不保留时间方向上下翻转。
+
+3. 修改位置
+
+文件：01_train.py
+
+将增强逻辑改为：
+
+    if self.augment:
+        if np.random.rand() < 0.5:
+            x = np.flip(x, axis=1)
+            r = np.flip(r, axis=1)
+
+4. 技术目的
+
+保持地震时间轴物理顺序，避免网络学习到不合理的倒置地层结构。
+
+
+四、高优先级：wavelet_bank 加回 estimated_wavelet
+---------------------------------------------
+
+1. 当前问题
+
+02_generate_synthetic_dataset.py 中 build_wavelet_bank 当前只把 3 个 B-spline 子波加入 bank。
+虽然代码计算了四口井估计子波平均值 reference，但没有将其作为 estimated_wavelet 加入训练。
+
+当前实际 wavelet_bank 只有：
+
+    bspline_55_70hz
+    bspline_65_80hz
+    bspline_75_90hz
+
+缺少：
+
+    estimated_wavelet
+
+2. 修改目标
+
+将四口井平均估计子波作为 wavelet_bank 的第一个子波，和 3 个 B-spline 子波共同参与样本生成。
+
+3. 修改位置
+
+文件：02_generate_synthetic_dataset.py
+
+将 build_wavelet_bank 改为：
+
+    def build_wavelet_bank(raw_wavelets):
+        reference = normalise_wavelet(np.mean(np.stack(list(raw_wavelets.values())), axis=0))
+        bank = [
+            {
+                "name": "estimated_wavelet",
+                "wavelet": reference,
+                "band": None,
+                "type": "estimated",
+            }
+        ]
+
+        for band in BSPLINE_WAVELET_BANDS:
+            name = f"bspline_{int(band[2])}_{int(band[3])}hz"
+            bank.append({
+                "name": name,
+                "wavelet": build_bspline_wavelet(reference.size, DT, band),
+                "band": band,
+                "type": "bspline",
+            })
+        return bank
+
+4. 技术目的
+
+保留井震估计子波对应的真实相位和实际井震响应，避免训练集完全由人工设计 B-spline 子波主导。
+
+
+五、中高优先级：增加 0–25 Hz residual 低频泄漏惩罚
+------------------------------------------------
+
+1. 当前问题
+
+当前网络预测的是 residual，理论上 residual 不应包含明显 0–25 Hz 低频成分。
+但当前 loss 中没有明确惩罚 residual 的低频泄漏。
+
+当前 loss 只有：
+
+    loss_wide
+    loss_res_l1
+    loss_mean
+    loss_rb
+    loss_er
+
+2. 修改目标
+
+新增 residual_lowfreq_leak_loss，惩罚预测残差在 0–25 Hz 的振幅能量。
+
+3. 修改位置一
+
+文件：common.py
+
+新增函数：
+
+    def residual_lowfreq_leak_loss(pred_residual, dt=DT, low=0.0, high=25.0):
+        """
+        Penalize low-frequency leakage in predicted residual.
+        The residual should not contain strong 0-25 Hz energy because the low-frequency
+        component is already provided by the low-pass input.
+        """
+        nt = pred_residual.shape[-2]
+        P = torch.fft.rfft(pred_residual, dim=-2)
+        freqs = torch.fft.rfftfreq(nt, d=dt, device=pred_residual.device)
+        mask = (freqs >= low) & (freqs < high)
+        return P[:, :, mask, :].abs().mean()
+
+4. 修改位置二
+
+文件：01_train.py
+
+在 common 导入中增加：
+
+    residual_lowfreq_leak_loss
+
+在 ResidualBandConstrainedLoss.forward 中增加：
+
+    loss_low = residual_lowfreq_leak_loss(residual_pred)
+
+总损失加入：
+
+    + 0.5 * loss_low
+
+loss_dict 中增加：
+
+    "low": float(loss_low.detach().cpu())
+
+keys 中增加：
+
+    "low"
+
+5. 技术目的
+
+限制网络把低频成分混入 residual，使最终低频主体主要由 narrow_raw 提供，提高低频保真性。
+
+
+六、中高优先级：增加 55–80 Hz 高频专项约束
+-----------------------------------------
+
+1. 当前问题
+
+当前 residual_band_loss 约束 25–75 Hz，residual_energy_ratio_loss 约束 35–75 Hz。
+但实际问题是 55 Hz 以上补偿偏弱，当前 loss 没有单独加强 55–80 Hz。
+
+2. 修改目标
+
+新增 residual_highband_loss，单独约束 55–80 Hz 的 residual 振幅谱。
+
+3. 修改位置一
+
+文件：common.py
+
+新增函数：
+
+    def residual_highband_loss(pred_residual, label_residual, dt=DT, low=55.0, high=80.0):
+        """
+        Extra amplitude constraint for the 55-80 Hz residual band.
+        This band is currently under-compensated, so it is constrained separately.
+        """
+        nt = pred_residual.shape[-2]
+        P = torch.fft.rfft(pred_residual, dim=-2)
+        L = torch.fft.rfft(label_residual, dim=-2)
+        freqs = torch.fft.rfftfreq(nt, d=dt, device=pred_residual.device)
+
+        mask = (freqs >= low) & (freqs <= high)
+        return torch.abs(P[:, :, mask, :].abs() - L[:, :, mask, :].abs()).mean()
+
+4. 修改位置二
+
+文件：01_train.py
+
+在 common 导入中增加：
+
+    residual_highband_loss
+
+在 ResidualBandConstrainedLoss.forward 中增加：
+
+    loss_high = residual_highband_loss(residual_pred, residual_target)
+
+总损失加入：
+
+    + 1.0 * loss_high
+
+loss_dict 中增加：
+
+    "high": float(loss_high.detach().cpu())
+
+keys 中增加：
+
+    "high"
+
+plot_history 中建议增加 high 曲线。
+
+5. 技术目的
+
+增强 55–80 Hz 频段的学习权重，缓解预测残差高频补偿偏弱的问题。
+
+
+七、中优先级：更新训练日志与曲线记录
+----------------------------------
+
+1. 当前问题
+
+01_train.py 当前训练统计 keys 只有：
+
+    total, wide, residual, mean, rb, er
+
+新增 low 和 high 后，如果不更新 keys、totals、print 和 plot_history，会导致记录缺失或程序报错。
+
+2. 修改目标
+
+统一加入：
+
+    low
+    high
+
+3. 修改位置
+
+文件：01_train.py
+
+将 keys 改为：
+
+    keys = ["total", "wide", "residual", "mean", "rb", "er", "low", "high"]
+
+run_epoch 中 totals 同步改为：
+
+    totals = {"total": 0.0, "wide": 0.0, "residual": 0.0, "mean": 0.0, "rb": 0.0, "er": 0.0, "low": 0.0, "high": 0.0}
+
+print 日志增加：
+
+    low={val['low']:.4f}, high={val['high']:.4f}
+
+plot_history 中 keys_loss 建议改为：
+
+    keys_loss = ["wide", "rb", "er", "low", "high", "residual", "mean"]
+
+4. 技术目的
+
+确保新增损失项可以被训练日志、history 文件和训练曲线完整记录。
+
+
+八、中优先级：metadata 增加归一化说明
+----------------------------------
+
+1. 当前问题
+
+当前 synthetic_metadata.npy 记录了样本、子波、井位、构造和频带信息，但归一化来源不够明确。
+
+2. 修改目标
+
+在 patch metadata 和总 metadata 中增加归一化字段。
+
+3. 修改位置
+
+文件：02_generate_synthetic_dataset.py
+
+在 patch_meta 中增加：
+
+    "normalization": "narrow_p99_shared_scale"
+
+在 section_meta 中增加：
+
+    "normalization": "narrow_p99_shared_scale"
+
+在 synthetic_metadata.npy 总字典中增加：
+
+    "normalization": "narrow_p99_shared_scale",
+    "scale_source": "clean_narrow_p99"
+
+4. 技术目的
+
+后续复现实验时可以明确知道训练尺度来自窄频输入，而不是宽频标签。
+
+
+九、暂时不建议这轮实现的复杂修改
+------------------------------
+
+1. B-spline 子波低频井旁筛选
+
+当前确实缺少 B-spline 子波筛选机制，但这部分涉及：
+
+    井反射系数
+    井旁地震道
+    候选 B-spline 子波
+    低通合成记录
+    井旁 trace 相关系数
+    相位误差
+    包络相关性
+
+建议下一轮单独新建脚本实现，不要和这次核心修复混在一起。
+
+2. 暂时不要改网络结构
+
+UNetCBAM 当前先保持不变。
+
+3. 暂时不要重新启用 Q 滤波
+
+USE_Q_FILTER 继续保持 False。
+
+4. 暂时不要改 PATCH_STRIDE
+
+PATCH_STRIDE 当前为 64，可以先保持不动。
+
+
+十、修改后必须满足的自检条件
+--------------------------
+
+1. 02_generate_synthetic_dataset.py 中必须满足：
+
+    shared_scale = percentile(abs(clean_narrow), 99)
+
+不能再使用 clean_wide 作为归一化尺度。
+
+2. 02_predict_f3.py 中不能再出现：
+
+    R_MEDIAN
+
+也不能再出现：
+
+    wide_pred = wide_norm * narrow_scale * R_MEDIAN
+
+3. 02_predict_f3.py 中必须满足：
+
+    residual_pred = residual_norm * narrow_scale
+    wide_direct = narrow_raw + residual_pred
+    wide_highpass = narrow_raw + highpass(residual_pred)
+
+4. 01_train.py 中不能再出现：
+
+    np.flip(x, axis=0)
+    np.flip(r, axis=0)
+
+5. build_wavelet_bank 返回的子波应包括：
+
+    estimated_wavelet
+    bspline_55_70hz
+    bspline_65_80hz
+    bspline_75_90hz
+
+6. common.py 中应新增：
+
+    residual_lowfreq_leak_loss
+    residual_highband_loss
+
+7. 01_train.py 的 loss_dict、keys、plot_history、print 日志应包含：
+
+    low
+    high
+
+8. train_labels / val_labels 必须继续保存 residual，不允许改回 wide label。
+
+
+十一、建议修改后运行顺序
+----------------------
+
+1. 重新生成训练样本
+
+    python code/02_generate_synthetic_dataset.py
+
+2. 检查合成样本频谱
+
+    python code/12_plot_synthetic_section_spectra.py
+
+3. 重新训练
+
+    python code/01_train.py --epochs 300 --batch-size 4
+
+4. 先只预测四条井旁 inline
+
+    python code/02_predict_f3.py --output-prefix bspline_v3 --inline-values 244,362,442,722
+
+5. 评价 direct 和 highpass 两种重组结果
+
+    python code/11_evaluate_direct_vs_highpass.py --prefix bspline_v3
+
+6. 进行 55–75 Hz 参考与预测对比
+
+    python code/07_filter_wide_reference_55hz.py --prefix bspline_v3
+    python code/08_filter_prediction_55hz.py --prefix bspline_v3 --input-suffix wide_prediction
+    python code/10_plot_well_inline_filter_prediction_compare.py --prefix bspline_v3 --prediction-suffix wide_prediction
+
+
+十二、一句话总结
+--------------
+
+这次修改的核心不是换网络，而是修正实验闭合逻辑：
+
+    训练/推理统一 narrow_p99 尺度；
+    推理去掉 R_MEDIAN；
+    低频主体严格保持 narrow_raw；
+    网络只预测 residual；
+    residual 不能泄漏低频；
+    55–80 Hz 高频单独加强；
+    样本子波族加入 estimated_wavelet，避免完全依赖人工 B-spline 子波。
