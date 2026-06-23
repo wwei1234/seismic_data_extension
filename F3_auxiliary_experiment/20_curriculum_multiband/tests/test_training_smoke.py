@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -73,3 +74,31 @@ def test_one_joint_epoch_records_both_domains(tmp_path):
     assert result.history[0]["f3_val"]["leakage"] < 0.03
     assert f3_train.epoch == 1
     assert f3_val.epoch == 0
+
+
+def test_failed_gate_saves_separate_diagnostic_candidate(tmp_path):
+    result = run_training(
+        epochs=1,
+        f3_train=TinyDataset("f3"),
+        f3_val=TinyDataset("f3"),
+        synthetic_train=TinyDataset("synthetic"),
+        synthetic_val=TinyDataset("synthetic"),
+        output_dir=tmp_path,
+        device=torch.device("cpu"),
+        batch_size=2,
+        steps_per_epoch=1,
+        validation_batches=1,
+        base_c=4,
+    )
+
+    checkpoint = tmp_path / "diagnostic_candidate_model.pth"
+    metadata_path = tmp_path / "diagnostic_candidate_metadata.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+
+    assert result.gate_passed is False
+    assert checkpoint.exists()
+    assert metadata["gate_passed"] is False
+    assert metadata["uses_f3_wide_target"] is False
+    assert metadata["evaluation_authorized_by_user"] is True
+    assert metadata["selection_metric"] == "f3_correlation_then_phase"
+    assert len(metadata["sha256"]) == 64

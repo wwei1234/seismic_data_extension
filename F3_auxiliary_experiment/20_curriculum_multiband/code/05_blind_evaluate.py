@@ -102,6 +102,19 @@ def format_metrics(title, metrics):
     return "\n".join(lines)
 
 
+def provenance_lines(metadata):
+    lines = [f"Checkpoint SHA256: {metadata['lock_sha256']}"]
+    if metadata.get("diagnostic_ungated_evaluation"):
+        lines.extend([
+            "This diagnostic checkpoint did not pass the prelocked training gate.",
+            "Ungated real-F3 evaluation was explicitly authorized by the user.",
+            "F3 wide reference was read only after diagnostic checkpoint verification.",
+        ])
+    else:
+        lines.append("F3 wide reference was read only after model-lock verification.")
+    return lines
+
+
 def plot_sections(path, axis_name, numbers, narrow, direct, highpass, reference):
     rows = len(numbers)
     fig, axes = plt.subplots(rows, 5, figsize=(22, 4 * rows), squeeze=False)
@@ -241,8 +254,7 @@ def main():
         f"Evaluation prefix: {args.prefix}",
         f"Section axis: {metadata['section_axis']}",
         f"Section numbers: {', '.join(map(str, metadata['section_numbers']))}",
-        f"Model lock SHA256: {metadata['lock_sha256']}",
-        "F3 wide reference was read only after lock verification.",
+        *provenance_lines(metadata),
         "",
         format_metrics("Low-pass baseline vs reference", results["baseline"]),
         "",

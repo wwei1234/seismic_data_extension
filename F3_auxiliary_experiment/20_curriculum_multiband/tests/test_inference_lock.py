@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -43,6 +44,51 @@ def test_prediction_refuses_unlocked_checkpoint(tmp_path):
         predict_locked.validate_before_reference_read(
             checkpoint,
             tmp_path / "model_lock.json",
+        )
+
+
+def test_diagnostic_checkpoint_requires_explicit_authorization(tmp_path):
+    checkpoint = tmp_path / "diagnostic_candidate_model.pth"
+    checkpoint.write_bytes(b"diagnostic model")
+    metadata_path = tmp_path / "diagnostic_candidate_metadata.json"
+    metadata_path.write_text(json.dumps({
+        "sha256": predict_locked.sha256_file(checkpoint),
+        "gate_passed": False,
+        "uses_f3_wide_target": False,
+        "evaluation_authorized_by_user": True,
+    }), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="explicitly authorized"):
+        predict_locked.validate_diagnostic_authorization(
+            checkpoint,
+            metadata_path,
+            allow_ungated=False,
+        )
+
+    metadata = predict_locked.validate_diagnostic_authorization(
+        checkpoint,
+        metadata_path,
+        allow_ungated=True,
+    )
+    assert metadata["gate_passed"] is False
+
+
+def test_diagnostic_checkpoint_rejects_hash_mismatch(tmp_path):
+    checkpoint = tmp_path / "diagnostic_candidate_model.pth"
+    checkpoint.write_bytes(b"diagnostic model")
+    metadata_path = tmp_path / "diagnostic_candidate_metadata.json"
+    metadata_path.write_text(json.dumps({
+        "sha256": "0" * 64,
+        "gate_passed": False,
+        "uses_f3_wide_target": False,
+        "evaluation_authorized_by_user": True,
+    }), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="hash"):
+        predict_locked.validate_diagnostic_authorization(
+            checkpoint,
+            metadata_path,
+            allow_ungated=True,
         )
 
 

@@ -1,6 +1,7 @@
 """Run locked experiment 20 inference and save direct/highpass recombinations."""
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -27,7 +28,7 @@ from config import (  # noqa: E402
     SHOTNUM,
     ensure_dirs,
 )
-from leakage_guard import verify_model_lock  # noqa: E402
+from leakage_guard import sha256_file, verify_model_lock  # noqa: E402
 from phase_model import (  # noqa: E402
     PhaseConsistentResidualModel,
     project_numpy_frequency_band,
@@ -38,6 +39,25 @@ from signal_utils import zero_phase_filter_section  # noqa: E402
 
 def validate_before_reference_read(checkpoint_path, lock_path):
     return verify_model_lock(checkpoint_path, lock_path)
+
+
+def validate_diagnostic_authorization(
+    checkpoint_path,
+    metadata_path,
+    allow_ungated,
+):
+    if not allow_ungated:
+        raise ValueError("Ungated diagnostic evaluation was not explicitly authorized.")
+    metadata = json.loads(Path(metadata_path).read_text(encoding="utf-8"))
+    if metadata.get("gate_passed") is not False:
+        raise ValueError("Diagnostic metadata must identify an ungated checkpoint.")
+    if metadata.get("uses_f3_wide_target") is not False:
+        raise ValueError("Diagnostic checkpoint must not use an F3 wide target.")
+    if metadata.get("evaluation_authorized_by_user") is not True:
+        raise ValueError("Diagnostic evaluation was not authorized by the user.")
+    if sha256_file(checkpoint_path) != metadata.get("sha256"):
+        raise ValueError("Diagnostic checkpoint hash does not match its metadata.")
+    return metadata
 
 
 def recombine(narrow, residual, dt=DT):
@@ -118,6 +138,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", default=str(CHECKPOINT_DIR / "best_model.pth"))
     parser.add_argument("--lock", default=str(CHECKPOINT_DIR / "model_lock.json"))
+    parser.add_argument("--diagnostic-metadata")
+    parser.add_argument("--allow-ungated-diagnostic", action="store_true")
     parser.add_argument("--section-axis", choices=("inline", "crossline"), required=True)
     parser.add_argument("--values", required=True)
     parser.add_argument("--output-prefix", required=True)
@@ -126,7 +148,16 @@ def main():
     args = parser.parse_args()
     ensure_dirs()
 
-    lock_metadata = validate_before_reference_read(args.model, args.lock)
+    if args.diagnostic_metadata:
+        lock_metadata = validate_diagnostic_authorization(
+            args.model,
+            args.diagnostic_metadata,
+            args.allow_ungated_diagnostic,
+        )
+        diagnostic_mode = True
+    else:
+        lock_metadata = validate_before_reference_read(args.model, args.lock)
+        diagnostic_mode = False
     checkpoint = torch.load(args.model, map_location="cpu")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = PhaseConsistentResidualModel(
@@ -191,6 +222,11 @@ def main():
         "lock_sha256": lock_metadata["sha256"],
         "reference_read_after_lock": True,
         "uses_f3_wide_target_in_training": False,
+        "gate_passed": bool(lock_metadata.get("gate_passed", True)),
+        "diagnostic_ungated_evaluation": diagnostic_mode,
+        "evaluation_authorized_by_user": bool(
+            lock_metadata.get("evaluation_authorized_by_user", False)
+        ),
         "shape": shape,
     })
 

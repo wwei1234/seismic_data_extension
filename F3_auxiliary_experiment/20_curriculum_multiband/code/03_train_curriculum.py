@@ -32,7 +32,7 @@ from config import (  # noqa: E402
 )
 from curriculum import GatedCheckpointSelector, domain_cycle  # noqa: E402
 from datasets import F3MaskedDataset, SyntheticResidualDataset  # noqa: E402
-from leakage_guard import create_model_lock  # noqa: E402
+from leakage_guard import create_model_lock, sha256_file  # noqa: E402
 from phase_loss import (  # noqa: E402
     DomainAwarePhaseLoss,
     low_frequency_leakage_fraction,
@@ -218,6 +218,10 @@ def run_training(
     current_stage = None
     scaler = torch.amp.GradScaler("cuda", enabled=device.type == "cuda")
     best_path = output_dir / "best_model.pth"
+    diagnostic_path = output_dir / "diagnostic_candidate_model.pth"
+    diagnostic_metadata_path = output_dir / "diagnostic_candidate_metadata.json"
+    diagnostic_score = None
+    diagnostic_metadata = None
 
     for epoch in range(1, int(epochs) + 1):
         f3_train.set_epoch(epoch)
@@ -311,6 +315,37 @@ def run_training(
         }
         history.append(row)
 
+        candidate_score = (
+            f3_validation["correlation"],
+            f3_validation["phase"],
+        )
+        if diagnostic_score is None or candidate_score > diagnostic_score:
+            diagnostic_score = candidate_score
+            torch.save({
+                "epoch": epoch,
+                "stage": current_stage,
+                "model_state_dict": model.state_dict(),
+                "base_c": base_c,
+                "projector": FINAL_PROJECTOR,
+                "f3_validation": f3_validation,
+                "synthetic_validation": synthetic_validation,
+                "uses_f3_wide_target": False,
+                "gate_passed": False,
+                "diagnostic_candidate": True,
+            }, diagnostic_path)
+            diagnostic_metadata = {
+                "experiment": 20,
+                "gate_passed": False,
+                "uses_f3_wide_target": False,
+                "evaluation_authorized_by_user": True,
+                "selection_metric": "f3_correlation_then_phase",
+                "best_epoch": epoch,
+                "best_f3_validation": f3_validation,
+                "best_synthetic_validation": synthetic_validation,
+                "final_projector": FINAL_PROJECTOR,
+                "total_epochs": int(epochs),
+            }
+
         if selector.consider(epoch, f3_validation, synthetic_validation):
             torch.save({
                 "epoch": epoch,
@@ -335,6 +370,12 @@ def run_training(
 
     (output_dir / "training_history.json").write_text(
         json.dumps(history, indent=2),
+        encoding="utf-8",
+    )
+    diagnostic_metadata["sha256"] = sha256_file(diagnostic_path)
+    diagnostic_metadata["checkpoint"] = str(diagnostic_path.resolve())
+    diagnostic_metadata_path.write_text(
+        json.dumps(diagnostic_metadata, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     gate_passed = selector.best_epoch is not None
