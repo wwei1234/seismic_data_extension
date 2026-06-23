@@ -57,5 +57,6 @@ F3_auxiliary_experiment/highfreq_conservative_adjustment_experiment/logs/
 .idea/
 .vscode/
 .claude/
+.worktrees/
 .DS_Store
 Thumbs.db
