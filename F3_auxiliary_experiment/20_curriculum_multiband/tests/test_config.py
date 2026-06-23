@@ -9,6 +9,7 @@ from config import (  # noqa: E402
     CURRICULUM_STAGES,
     F3_MASK_TASKS,
     FINAL_PROJECTOR,
+    SYNTHETIC_NOISE_LEVELS,
     TOTAL_EPOCHS,
 )
 
@@ -30,3 +31,4 @@ def test_curriculum_configuration_is_locked():
         "high_pass": 85.0,
         "high_stop": 100.0,
     }
+    assert SYNTHETIC_NOISE_LEVELS == (0.01, 0.03)
