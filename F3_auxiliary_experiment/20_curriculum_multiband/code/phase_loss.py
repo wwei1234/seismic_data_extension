@@ -39,6 +39,22 @@ def lateral_gradient_loss(prediction, target):
     return F.smooth_l1_loss(pred_gradient, target_gradient, beta=0.05)
 
 
+def low_frequency_leakage_fraction(prediction, projectors, dt):
+    spectrum = torch.fft.rfft(prediction, dim=-2)
+    frequencies = torch.fft.rfftfreq(
+        prediction.shape[-2],
+        d=dt,
+        device=prediction.device,
+    )
+    fractions = []
+    for index in range(prediction.shape[0]):
+        low_stop = projectors[index, 0]
+        low_energy = spectrum[index, :, frequencies < low_stop, :].abs().square().sum()
+        total_energy = spectrum[index].abs().square().sum()
+        fractions.append(low_energy / (total_energy + 1e-8))
+    return torch.stack(fractions).mean()
+
+
 def complex_stft_loss(prediction, target, windows=(32, 64, 128)):
     time_size = prediction.shape[-2]
     losses = []
@@ -134,9 +150,10 @@ class DomainAwarePhaseLoss(nn.Module):
         lateral = lateral_gradient_loss(projected_prediction, projected_target)
         reconstructed = input_data + projected_prediction
         wide = F.smooth_l1_loss(reconstructed, target_wide, beta=0.05)
-        leakage_component = residual_prediction - projected_prediction
-        leakage = leakage_component.square().mean() / (
-            projected_prediction.square().mean() + 1e-8
+        leakage = low_frequency_leakage_fraction(
+            residual_prediction,
+            projector,
+            self.dt,
         )
         weights = self.weights[domain]
         total = (

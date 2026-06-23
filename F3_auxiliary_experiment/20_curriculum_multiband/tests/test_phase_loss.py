@@ -48,3 +48,24 @@ def test_matching_prediction_has_lower_f3_loss():
         projector=projectors,
     )
     assert matching < wrong
+
+
+def test_leakage_metric_is_bounded_energy_fraction():
+    torch.manual_seed(9)
+    prediction = torch.randn(2, 1, 128, 8)
+    target = torch.randn_like(prediction) * 0.1
+    inputs = torch.randn_like(prediction) * 0.1
+    projectors = torch.tensor([
+        [10.0, 12.0, 30.0, 35.0],
+        [10.0, 12.0, 30.0, 35.0],
+    ])
+    criterion = DomainAwarePhaseLoss(dt=0.004)
+    _, parts = criterion(
+        prediction,
+        target,
+        inputs,
+        inputs + target,
+        domain="f3",
+        projector=projectors,
+    )
+    assert 0.0 <= parts["leakage"] <= 1.0
