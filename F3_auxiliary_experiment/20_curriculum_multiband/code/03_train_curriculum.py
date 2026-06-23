@@ -221,9 +221,7 @@ def run_training(
 
     for epoch in range(1, int(epochs) + 1):
         f3_train.set_epoch(epoch)
-        f3_val.set_epoch(epoch)
         synthetic_train.set_epoch(epoch)
-        synthetic_val.set_epoch(epoch)
         stage = stage_for_epoch(epoch)
         if stage["name"] != current_stage:
             current_stage = stage["name"]

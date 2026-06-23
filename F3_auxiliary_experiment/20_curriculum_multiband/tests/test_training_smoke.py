@@ -22,7 +22,7 @@ run_training = train_curriculum.run_training
 class TinyDataset(Dataset):
     def __init__(self, domain):
         self.domain = domain
-        self.epoch = 1
+        self.epoch = 0
 
     def set_epoch(self, epoch):
         self.epoch = epoch
@@ -52,10 +52,12 @@ class TinyDataset(Dataset):
 
 
 def test_one_joint_epoch_records_both_domains(tmp_path):
+    f3_train = TinyDataset("f3")
+    f3_val = TinyDataset("f3")
     result = run_training(
         epochs=1,
-        f3_train=TinyDataset("f3"),
-        f3_val=TinyDataset("f3"),
+        f3_train=f3_train,
+        f3_val=f3_val,
         synthetic_train=TinyDataset("synthetic"),
         synthetic_val=TinyDataset("synthetic"),
         output_dir=tmp_path,
@@ -69,3 +71,5 @@ def test_one_joint_epoch_records_both_domains(tmp_path):
     assert "synthetic_val" in result.history[0]
     assert result.history[0]["uses_f3_wide_target"] is False
     assert result.history[0]["f3_val"]["leakage"] < 0.03
+    assert f3_train.epoch == 1
+    assert f3_val.epoch == 0
