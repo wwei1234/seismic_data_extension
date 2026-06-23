@@ -9,6 +9,7 @@ sys.path.insert(0, str(CODE_DIR))
 
 from phase_model import (  # noqa: E402
     PhaseConsistentResidualModel,
+    cosine_frequency_mask,
     project_frequency_band,
 )
 
@@ -49,3 +50,12 @@ def test_phase_consistent_model_preserves_input_low_band():
     wide_low = torch.fft.rfft(wide, dim=-2)[:, :, low_mask, :]
     assert torch.allclose(wide_low, input_low, atol=2e-5, rtol=1e-5)
     assert band_energy(residual, 0.0, 20.0) < band_energy(residual, 28.0, 80.0) * 1e-5
+
+
+def test_frequency_mask_supports_half_precision_request():
+    mask = cosine_frequency_mask(256, DT, dtype=torch.float16)
+
+    assert mask.dtype == torch.float16
+    assert torch.isfinite(mask).all()
+    assert float(mask.min()) == 0.0
+    assert float(mask.max()) == 1.0

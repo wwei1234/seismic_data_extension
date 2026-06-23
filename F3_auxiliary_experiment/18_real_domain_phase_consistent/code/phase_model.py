@@ -28,7 +28,8 @@ def cosine_frequency_mask(
     low_ramp = (frequencies > low_stop) & (frequencies < low_pass)
     if low_pass > low_stop:
         phase = (frequencies[low_ramp] - low_stop) / (low_pass - low_stop)
-        mask[low_ramp] = 0.5 - 0.5 * torch.cos(torch.pi * phase)
+        values = 0.5 - 0.5 * torch.cos(torch.pi * phase)
+        mask[low_ramp] = values.to(mask.dtype)
 
     passband = (frequencies >= low_pass) & (frequencies <= high_pass)
     mask[passband] = 1.0
@@ -36,7 +37,8 @@ def cosine_frequency_mask(
     high_ramp = (frequencies > high_pass) & (frequencies < high_stop)
     if high_stop > high_pass:
         phase = (frequencies[high_ramp] - high_pass) / (high_stop - high_pass)
-        mask[high_ramp] = 0.5 + 0.5 * torch.cos(torch.pi * phase)
+        values = 0.5 + 0.5 * torch.cos(torch.pi * phase)
+        mask[high_ramp] = values.to(mask.dtype)
     return mask
 
 
@@ -73,7 +75,8 @@ class PhaseConsistentResidualModel(nn.Module):
         self.dt = float(dt)
 
     def forward_with_residual(self, narrow):
-        residual = project_frequency_band(self.net(narrow), dt=self.dt)
+        raw_residual = self.net(narrow)
+        residual = project_frequency_band(raw_residual.float(), dt=self.dt)
         return narrow + residual, residual
 
     def forward(self, narrow):

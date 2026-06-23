@@ -32,6 +32,7 @@ from real_f3_samples import (
     assign_plane_splits,
     make_real_pair,
     pad_spatial_patch,
+    patch_has_sufficient_coverage,
     plan_axis_candidates,
 )
 from segy_reader import read_segy
@@ -79,6 +80,17 @@ def extract_wide_patch(cube, candidate):
         section = cube[:, :, candidate["section_index"]].T
     patch = section[t0:t0 + PATCH_SIZE, x0:x0 + width]
     return pad_spatial_patch(patch, PATCH_SIZE)
+
+
+def filter_quality_candidates(cube, rows):
+    accepted = []
+    rejected = 0
+    for row in rows:
+        if patch_has_sufficient_coverage(extract_wide_patch(cube, row)):
+            accepted.append(row)
+        else:
+            rejected += 1
+    return accepted, rejected
 
 
 def write_split(cube, rows, split):
@@ -175,6 +187,14 @@ def main():
         PATCH_SIZE // 2,
         PATCH_STRIDE,
     )
+    inline_candidates, rejected_inline = filter_quality_candidates(
+        cube,
+        inline_candidates,
+    )
+    crossline_candidates, rejected_crossline = filter_quality_candidates(
+        cube,
+        crossline_candidates,
+    )
     train_rows, val_rows = assign_plane_splits(
         inline_candidates + crossline_candidates,
         val_fraction=0.17,
@@ -185,6 +205,8 @@ def main():
     print(
         f"Candidates: inline={len(inline_candidates)}, "
         f"crossline={len(crossline_candidates)}, "
+        f"rejected_missing_inline={rejected_inline}, "
+        f"rejected_missing_crossline={rejected_crossline}, "
         f"selected train={len(train_rows)}, val={len(val_rows)}",
         flush=True,
     )
@@ -202,6 +224,9 @@ def main():
         "well_crosslines": WELL_CROSSLINES,
         "inline_guard": INLINE_GUARD,
         "crossline_guard": CROSSLINE_GUARD,
+        "minimum_column_coverage": 0.95,
+        "rejected_missing_inline": rejected_inline,
+        "rejected_missing_crossline": rejected_crossline,
         "num_train": len(train_meta),
         "num_val": len(val_meta),
         "train_axes": {

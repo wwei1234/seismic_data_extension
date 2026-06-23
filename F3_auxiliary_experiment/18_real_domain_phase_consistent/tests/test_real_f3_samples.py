@@ -11,6 +11,7 @@ from real_f3_samples import (  # noqa: E402
     assign_plane_splits,
     make_real_pair,
     patch_is_guarded,
+    patch_has_sufficient_coverage,
     plan_axis_candidates,
 )
 
@@ -76,3 +77,12 @@ def test_plane_split_never_places_one_section_in_both_sets():
     assert train_planes
     assert val_planes
     assert train_planes.isdisjoint(val_planes)
+
+
+def test_patch_quality_rejects_missing_grid_but_keeps_dense_data():
+    dense = np.ones((256, 256), dtype=np.float32)
+    sparse = np.zeros((256, 256), dtype=np.float32)
+    sparse[:, :2] = 1.0
+
+    assert patch_has_sufficient_coverage(dense)
+    assert not patch_has_sufficient_coverage(sparse)

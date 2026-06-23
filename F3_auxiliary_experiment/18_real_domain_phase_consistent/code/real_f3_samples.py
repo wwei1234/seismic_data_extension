@@ -107,6 +107,12 @@ def assign_plane_splits(candidates, val_fraction=0.2, seed=42):
     return train, val
 
 
+def patch_has_sufficient_coverage(patch, minimum_column_fraction=0.95):
+    patch = np.asarray(patch)
+    covered_columns = np.max(np.abs(patch), axis=0) > 0.0
+    return float(np.mean(covered_columns)) >= minimum_column_fraction
+
+
 def pad_spatial_patch(patch, patch_size):
     patch = np.asarray(patch, dtype=np.float32)
     if patch.shape[1] == patch_size:
