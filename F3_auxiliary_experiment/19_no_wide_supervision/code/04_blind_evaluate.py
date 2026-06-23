@@ -219,7 +219,7 @@ def main():
         "",
         format_metrics("Low-pass baseline vs reference", baseline),
         "",
-        format_metrics("Experiment 18 prediction vs reference", predicted),
+        format_metrics("Experiment 19 no-wide-supervision prediction vs reference", predicted),
         "",
         "Per-section key metrics:",
         "  number, baseline_corr, prediction_corr, prediction_band_corr, "
