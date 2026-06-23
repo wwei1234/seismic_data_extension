@@ -27,7 +27,7 @@ from config import (
     SHOTNUM,
     ensure_dirs,
 )
-from phase_model import PhaseConsistentResidualModel
+from phase_model import PhaseConsistentResidualModel, project_numpy_frequency_band
 from real_f3_samples import patch_starts
 from segy_reader import read_segy
 from signal_utils import zero_phase_filter_section
@@ -54,7 +54,8 @@ def predict_residual(model, normalized_section, device, patch_size, stride):
                 residual = residual.cpu().squeeze().numpy().astype(np.float32)
                 output[t0:t0 + patch_size, x0:x0 + patch_size] += residual * window
                 weight[t0:t0 + patch_size, x0:x0 + patch_size] += window
-    return output / np.maximum(weight, 1e-6)
+    blended = output / np.maximum(weight, 1e-6)
+    return project_numpy_frequency_band(blended, dt=DT)
 
 
 def select_sections(cube, geometry, axis, values):

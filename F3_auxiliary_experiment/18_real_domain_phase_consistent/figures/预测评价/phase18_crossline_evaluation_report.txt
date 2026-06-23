@@ -1,0 +1,41 @@
+Evaluation prefix: phase18_crossline
+Section axis: crossline
+Section numbers: 336, 387, 848, 1007
+
+Low-pass baseline vs reference
+  MAE: 1373.837180
+  RMSE: 1952.165431
+  PSNR: 23.724562
+  Correlation: 0.588366
+  high_freq_ratio_35_80: 0.000000
+  spectrum_l1_vs_reference: 0.372672
+  full_bandpass_correlation_25_80: 0.383393
+  residual_bandpass_correlation_25_80: 0.000000
+  residual_weighted_phase_score_25_80: 0.000000
+  residual_envelope_correlation_25_80: 0.000000
+  low_frequency_correlation_0_22: 1.000000
+  low_frequency_nrmse_0_22: 0.000000
+
+Experiment 18 prediction vs reference
+  MAE: 1241.881938
+  RMSE: 1723.713780
+  PSNR: 24.805591
+  Correlation: 0.708522
+  high_freq_ratio_35_80: 0.518508
+  spectrum_l1_vs_reference: 0.094343
+  full_bandpass_correlation_25_80: 0.595804
+  residual_bandpass_correlation_25_80: 0.516844
+  residual_weighted_phase_score_25_80: 0.616763
+  residual_envelope_correlation_25_80: 0.635590
+  low_frequency_correlation_0_22: 1.000000
+  low_frequency_nrmse_0_22: 0.000000
+
+Per-section key metrics:
+  number, baseline_corr, prediction_corr, prediction_band_corr, prediction_phase_score, prediction_spectrum_l1
+  336, 0.571278, 0.717780, 0.549511, 0.652013, 0.084146
+  387, 0.556926, 0.709770, 0.550398, 0.650380, 0.082396
+  848, 0.613647, 0.714861, 0.506634, 0.603581, 0.093591
+  1007, 0.606483, 0.691883, 0.456369, 0.552819, 0.108819
+
+Section figure: D:\桌面\基于深度学习的地震数据处理\地震数据拓频\F3_auxiliary_experiment\18_real_domain_phase_consistent\figures\预测评价\phase18_crossline_sections.png
+Spectrum figure: D:\桌面\基于深度学习的地震数据处理\地震数据拓频\F3_auxiliary_experiment\18_real_domain_phase_consistent\figures\预测评价\phase18_crossline_spectra.png

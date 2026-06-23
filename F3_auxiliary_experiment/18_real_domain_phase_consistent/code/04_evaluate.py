@@ -16,6 +16,7 @@ from phase_metrics import (
     bandpass_correlation,
     envelope_correlation,
     low_frequency_metrics,
+    residual_high_frequency_metrics,
     safe_correlation,
     weighted_phase_score,
 )
@@ -65,17 +66,20 @@ def evaluate(prediction, reference, narrow):
     result = spatial_metrics(prediction, reference)
     spectral, spectrum = spectrum_metrics(prediction, reference)
     low = low_frequency_metrics(prediction, narrow, DT)
+    residual_high = residual_high_frequency_metrics(
+        prediction,
+        reference,
+        narrow,
+        DT,
+    )
     result.update(spectral)
     result.update({
-        "bandpass_correlation_25_80": bandpass_correlation(
+        "full_bandpass_correlation_25_80": bandpass_correlation(
             prediction, reference, DT
         ),
-        "weighted_phase_score_25_80": weighted_phase_score(
-            prediction, reference, DT
-        ),
-        "envelope_correlation_25_80": envelope_correlation(
-            prediction, reference, DT
-        ),
+        "residual_bandpass_correlation_25_80": residual_high["bandpass_correlation"],
+        "residual_weighted_phase_score_25_80": residual_high["phase_score"],
+        "residual_envelope_correlation_25_80": residual_high["envelope_correlation"],
         "low_frequency_correlation_0_22": low["correlation"],
         "low_frequency_nrmse_0_22": low["nrmse"],
     })
@@ -226,8 +230,8 @@ def main():
             f"  {row['section_number']}, "
             f"{row['baseline']['Correlation']:.6f}, "
             f"{row['prediction']['Correlation']:.6f}, "
-            f"{row['prediction']['bandpass_correlation_25_80']:.6f}, "
-            f"{row['prediction']['weighted_phase_score_25_80']:.6f}, "
+            f"{row['prediction']['residual_bandpass_correlation_25_80']:.6f}, "
+            f"{row['prediction']['residual_weighted_phase_score_25_80']:.6f}, "
             f"{row['prediction']['spectrum_l1_vs_reference']:.6f}"
         )
     report.extend([

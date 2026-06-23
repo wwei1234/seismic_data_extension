@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 
 import torch
+import numpy as np
 
 
 CODE_DIR = Path(__file__).resolve().parents[1] / "code"
@@ -10,6 +11,7 @@ sys.path.insert(0, str(CODE_DIR))
 from phase_model import (  # noqa: E402
     PhaseConsistentResidualModel,
     cosine_frequency_mask,
+    project_numpy_frequency_band,
     project_frequency_band,
 )
 
@@ -59,3 +61,19 @@ def test_frequency_mask_supports_half_precision_request():
     assert torch.isfinite(mask).all()
     assert float(mask.min()) == 0.0
     assert float(mask.max()) == 1.0
+
+
+def test_numpy_projection_removes_blending_generated_low_frequency():
+    time = np.arange(462, dtype=np.float32) * DT
+    signal = (
+        np.sin(2.0 * np.pi * 10.0 * time)
+        + np.sin(2.0 * np.pi * 50.0 * time)
+    )[:, None]
+
+    projected = project_numpy_frequency_band(signal, dt=DT)
+    spectrum = np.abs(np.fft.rfft(projected, axis=0))
+    frequencies = np.fft.rfftfreq(projected.shape[0], DT)
+
+    assert spectrum[frequencies <= 20.0].sum() < spectrum[
+        (frequencies >= 45.0) & (frequencies <= 55.0)
+    ].sum() * 1e-6

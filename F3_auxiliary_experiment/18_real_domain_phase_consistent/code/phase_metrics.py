@@ -63,3 +63,25 @@ def low_frequency_metrics(prediction, narrow_input, dt, high_hz=22.0):
         "correlation": safe_correlation(pred_low, input_low),
         "nrmse": rmse / max(reference_rms, 1e-12),
     }
+
+
+def residual_high_frequency_metrics(prediction, target, narrow_input, dt):
+    predicted_residual = np.asarray(prediction) - np.asarray(narrow_input)
+    target_residual = np.asarray(target) - np.asarray(narrow_input)
+    return {
+        "bandpass_correlation": bandpass_correlation(
+            predicted_residual,
+            target_residual,
+            dt,
+        ),
+        "phase_score": weighted_phase_score(
+            predicted_residual,
+            target_residual,
+            dt,
+        ),
+        "envelope_correlation": envelope_correlation(
+            predicted_residual,
+            target_residual,
+            dt,
+        ),
+    }

@@ -9,6 +9,7 @@ sys.path.insert(0, str(CODE_DIR))
 
 from phase_metrics import (  # noqa: E402
     low_frequency_metrics,
+    residual_high_frequency_metrics,
     weighted_phase_score,
 )
 
@@ -41,3 +42,16 @@ def test_low_frequency_preservation_detects_exact_bypass():
 
     assert result["correlation"] > 0.999
     assert result["nrmse"] < 1e-5
+
+
+def test_residual_phase_metrics_score_zero_baseline_and_exact_target():
+    narrow = sinusoid(16.0)
+    reference = narrow + sinusoid(50.0, phase=0.4)
+
+    baseline = residual_high_frequency_metrics(narrow, reference, narrow, DT)
+    exact = residual_high_frequency_metrics(reference, reference, narrow, DT)
+
+    assert abs(baseline["phase_score"]) < 1e-8
+    assert exact["bandpass_correlation"] > 0.999
+    assert exact["phase_score"] > 0.999
+    assert exact["envelope_correlation"] > 0.999
