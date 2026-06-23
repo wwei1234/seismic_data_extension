@@ -88,7 +88,7 @@ shared_code读取，不复制到18号目录。
     wide_raw = 实际F3原始剖面
     narrow_raw = lowpass(wide_raw, 3-6-25-35 Hz)
     scale = P99(abs(narrow_raw))
-    input = clip(narrow_raw / scale, -1, 1)
+    input = narrow_raw / scale（不裁剪，保留严格闭合）
     residual_label = (wide_raw - narrow_raw) / scale
 
 真实样本不额外添加白噪声。16号合成残差样本继续参与训练，用于保持井约束
