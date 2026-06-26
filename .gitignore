@@ -49,6 +49,9 @@ F3_auxiliary_experiment/highfreq_conservative_adjustment_experiment/figures/
 F3_auxiliary_experiment/highfreq_conservative_adjustment_experiment/logs/
 
 # F3 large binary data files
+**/Rawdata/
+*.sgy
+*.segy
 *.pck
 *.3dhc
 *.cbvs
