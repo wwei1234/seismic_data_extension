@@ -1,0 +1,1363 @@
+第 68 卷 第 2 期                                       地      球      物       理      学      报                                    Vol. 68，No. 2
+2025 年 2 月                                  CHINESE        JOURNAL        OF     GEOPHYSICS                                   Feb.，2025
+
+程亮，张志军，谭辉煌等. 2025. 基于非稳态稀疏反演的地震资料拓频处理. 地球物理学报，68(2)：696-712，doi：10.6038/
+cjg2023Q0281.
+Cheng L, Zhang Z J, Tan H H, et al. 2025. Seismic-bandwidth enhancement by the nonstationary sparse inversion. Chinese J.
+Geophys. (in Chinese), 68(2): 696-712, doi：10.6038/cjg2023Q0281.
+
+
+
+
+                基于非稳态稀疏反演的地震资料拓频处理
+                                            程亮，张志军，谭辉煌，郭军
+                                    中海石油 (中国) 有限公司天津分公司渤海石油研究院, 天津 300459
+
+
+     摘要      由于地层固有的吸收衰减作用，地震波在地下介质中传播时会发生振幅衰减、频率降低和相位畸变的现象.
+     这种由地层黏弹性引起的地震波衰减是一种客观存在的现象，并可以用品质因子 Q 定量化表征. 为了消除地层吸
+     收衰减作用，本文提出一种利用非稳态稀疏反演方法补偿因地层黏弹性而损失的地震频率和振幅，重构地震高频
+     信息，并进一步可评估和优选最优的 Q 模型及其对应的非稳态反演重构的地震数据. 基于谱比法，可截取不同长度
+     时窗的衰减地震数据估算出一系列的等效 Q 模型；构建 p 范数 (0<p<1) 约束下的非稳态稀疏反演框架，同时消除地
+     震子波滤波效应和 Q 滤波效应，得到不同长度时窗下谱比法求取的 Q 值所对应的地层反射系数；选择合适的地震
+     子波对非稳态反演得到的反射系数进行整形处理，重构高频地震数据；分别计算并最优化处理不同 Q 模型所重构的
+     高频地震数据深浅层能量相对误差，挑选最优的 Q 值及对应的非稳态反演补偿后的地震数据. 模型和实际地震资
+     料处理结果表明：该方法不仅能够优选更合理的 Q 模型，提高了地震数据衰减补偿精度，拓宽了地震频带宽度，丰
+     富了地震资料频率成分，且与常规稳态方法相比较，地震深浅层分辨率和振幅更一致，极大地改善了地震资料的品质.
+     关键词        吸收衰减；Q 模型；高分辨率；非稳态稀疏反演；衰减机制
+     中图分类号 P631                        收稿日期 2022-04-24，2024-11-05 收修定稿
+     DOI： 10.6038/cjg2023Q0281         CSTR： 32084.14.cjg2023Q0281
+
+
+                 Seismic-bandwidth enhancement by the nonstationary sparse inversion
+
+                                  CHENG Liang，ZHANG ZhiJun，TAN HuiHuang，GUO Jun
+                                          CNOOC China Limited, Tianjin Branch, Tianjin 300459, China
+
+
+
+     Abstract      Resulted from the stratum inherent absorption-attenuation, seismic waves are usually accompanied
+     by the amplitude attenuation, frequency reduction and phase distortion when propagating through the strata. As
+     an objective geophysical phenomenon, this absorption-attenuation is related to formation visco-elasticity, and
+     has been further quantitatively measured by quality factor Q or attenuation factor (1/Q). For attenuation-
+     absorption elimination, we develop a high-resolution Q-compensation technique by using nonstationary sparse
+     reflectivity inversion. We further optimize for the most appropriate solution from a few estimated Q-models and
+     the corresponding restructured seismic data after the nonstationary sparse inversion. Rather than estimating
+     precise-Q, we determine a few equivalent-Q models by spectral ratio method from the attenuated seismic data cut
+     with different time-windows. Furthermore, a nonstationary sparse inversion with p-norm (0<p<1) regularization
+     is designed to effectively remove the wavelet and Q from the seismic data without magnifying noise appreciably,
+     and stably generate a series of reflectivity when providing these estimated equivalent-Q models. The high-
+
+基金项目       国家自然科学基金项目 (42474169，42074167)，重庆市自然科学基金面上 (CSTB2024NSCQ-MSX0153)，湖南省自然科学基金面上
+           (2023JJ30234)，重庆科技大学科研项目 (ckrc20240605，ckrc20231101，ckrc20231102) 和渤海重点二次地震采集区保真融合处理及储
+           层描述关键技术 (KJZH-2023-2101) 联合资助.
+第一作者简介          程亮，男，1990 年生，博士，主要从事地震衰减补偿和高分辨率处理研究. E-mail: cl_199051@163.com
+    2期                               程亮等：基于非稳态稀疏反演的地震资料拓频处理                                                             697
+
+
+     resolution seismic data are restructured by convolving the nonstationary inverted reflectivity and an appropriate
+     wavelet. The most reasonable equivalent-Q and the corresponding restructured seismic data are determined by
+     calculating and minimizing the relative error between the deep and shallow amplitudes of these restructured
+     high-resolution seismic data. Synthetic and field examples suggest that the proposed method not only accurately
+     identifies reflection interfaces, enriches seismic high- and low-frequency components, and enables the deep- and
+     shallow-resolution (and energy) more consistent, but also selects the optimal-Q from prior-Q models provided by
+     spectral ratio method.
+     Keywords     Absorption-attenuation; Q-model; High-resolution; Nonstationary sparse inversion; Attenuation-mechanism
+
+
+0    引言                                                          信息相融合，获取高分辨率的阻抗剖面，但该方法
+                                                                 要求井资料达到一定数量，并且受初始模型影响较
+     随着地下勘探难度增大，复杂地球物理和地质                                        大. 另外，地球物理研究者还通过改造测井资料提高
+问题的研究越来越依靠高品质地震资料. 若分辨率                                          井震匹配度，进而进行地震资料拓频处理. 田钢等
+不足，地震资料很难在地震勘探精细解释过程中发                                           (2005) 利用微测井采集的直达波资料，求取不同低
+挥出巨大作用. 因此，常需要采取高分辨率处理手段                                         速带地层的吸收衰减反滤波器来补偿地震数据的高
+拓宽地震频带，提高地震资料识别储层和复杂构造                                           频 成 分 . 李 辉 (2008)、 Song 等 (2010) 将 井 间 地 震 和
+的能力. 为了追求高分辨地震资料，地球物理学家已                                         地面地震资料进行匹配处理，通过设计匹配滤波器
+经 提 出 了 很 多 行 之 有 效 的 方 法 技 术 . 自 20 世 纪                         将井间地震资料降频到地面地震资料的频率尺度范
+70 年代以来出现了许多地震高分辨率处理方法，如                                         围内，进而对地面地震进行拓频处理. 宋建国等
+时 频 分 析 法 (Zoukaneri and Porsani, 2015; 陈 文 超 等 ,                (2016)、 程 亮 等 (2017) 等 将 这 种 多 尺 度 匹 配 技 术 延
+2009; Li et al., 2016; 纪 永 祯 等 , 2020)(小 波 变 换 、                 伸到测井与地震资料，提出步进迭代法测井资料的
+Gabor 变 换 、 S 变 换 等 )、 反 褶 积 (Ko and Scott,                      降频处理，提高井震资料在地震频带内的匹配程
+1967)、 反 Q 滤 波 (van der Baan, 2012; 田 广 和 赵 岩 ,                  度，进而拓展地震频带. 在实际工业应用中，地球物
+2023)、 谱 白 化 (Naghadeh and Morley, 2017) 等 ， 均 取                 理工作者通过实际测井资料统计发现，薄层反射系
+得了一定的应用效果. 时频分析法主要通过窗函数                                          数序列的谱态具有一定程度的“蓝色”特征，因此将
+来分析信号的时频变化提高地震分辨率，但受窗函                                           反演和谱蓝化技术相结合提高薄层分辨率
+数 的 影 响 大 ， 往 往 难 以 得 到 预 期 拓 频 效 果 (Alsalmi                     (Kazemeini et al., 2008; Attia et al., 2020; 荣 骏 召 等 ,
+and Wang, 2021; Wu et al., 2020). 反褶积方法主要是                       2022).
+通过去除地震记录中地震子波的影响，提高地震分                                                 注意到，上述地震高分辨率技术除了反 Q 滤波
+辨率，但为了获取稳定的反褶积结果，需要假设子                                           外，大多数都忽略了因地层 Q 衰减而引起的频率损
+波为最小相位 (Walden, 1985). 反 Q 滤波是通过补偿                               失，并未按照地震波传播规律去补偿地震高频成分.
+地震波传播过程中地层黏弹性对地震波振幅、相                                            地震波在地下介质中传播时，地层吸收衰减机制是
+位、频率的衰减作用，提高地震分辨率，但反 Q 滤波                                        影响地震资料质量的主要因素之一 (冯玮等, 2017)，
+存在振幅补偿不稳定，受噪声影响大的缺陷 (Wang,                                       一般可通过品质因子 (Q) 量化. Futterman(1962) 首先
+2002, 2006). 谱 白 化 是 工 业 界 常 用 的 一 种 地 震 资 料                     将这种吸收衰减机制描述为地层的一种基本属性，
+拓频方法，该类方法比较稳定，便于操作，但保幅性                                          自此以后，各种 Q 估算方法及相关衰减岩石物理模
+较差 (陆文凯等, 2005).                                                 型的研究得到了快速发展 (Wang et al., 2019, 2021; Li
+     除上述常规高分辨率处理方法外，多尺度地球                                        et al., 2020). 为 了 避 免 常 规 反 Q 滤 波 方 法 固 有 的 振
+物理资料联合处理也是一种有效的地震拓频手段.                                           幅补偿不稳定问题，研究人员提出了将反 Q 滤波和
+多尺度地球物理资料是同一地球物理场在不同尺度                                           反 褶 积 结 合 的 非 稳 态 反 褶 积 方 法 (Margrave et al.,
+下的响应，因此具有联合拓频的合理性. 宽带约束反                                         2011; Wang et al., 2013; Chai et al., 2016, 2017; Yuan et
+演 (Mansfield, 1989) 是一种常用的多尺度联合拓频                                al., 2017; Lari and Gholami, 2019; Sui and Ma, 2019)，
+方法，其主要是将地震资料、测井资料和先验地质                                           通过非稳态反演方法消除 Q 滤波效应，提高地震分
+ 698                                         地 球 物 理 学 报 （ Chinese J. Geophys.）                                                                                           68 卷
+
+
+辨率. Aghamiry 和 Gholami (2018)、Ma 等 (2018)、Cheng                                   在反演领域，p(0<p<1) 范数是一种有效的稀疏约束
+等 (2020, 2021) 利用数据驱动扫描 Q 的方法估算 Q，                                                准则，能使反演快速收敛于一个稀疏解. 针对 p 值的
+通过评价不同 Q 对应的反演结果，挑选最稀疏的反                                                          选取，应该结合实际的地层沉积结构和地质背景，
+演结果对应的 Q 作为最优值进行振幅和频率补偿，                                                          测试不同 p 值反演结果的稀疏度和噪声压制效果，
+虽然通过大量的统计性试验也验证了“Q 值的偏差                                                           优选 p 值进行反演. 反射系数稀疏反演旨在恢复出
+会 降 低 反 演 结 果 的 稀 疏 度 ”(Ma et al., 2018; Yuan et                                  具有地质含义和客观沉积规律的地层反射结构，而
+al., 2019)，但对这一现象的产生原因还未出现严谨                                                      并非追求解的绝对稀疏性.
+的理论证明.
+       基于已有研究，本文在地层反射结构稀疏的假
+                                                                                  1      方法原理
+设条件下，提出了一种 p(0<p<1) 范数约束下的非稳
+态反射系数稀疏反演方法. 考虑到地层 Q 衰减效应
+                                                                                          地震波在地下介质中传播时，由于地层的吸收
+所带来的地震高频损失，该方法将反射系数稀疏反
+                                                                                  衰减 (即 Q 衰减) 作用，导致采集的地震资料振幅衰
+演和 Q 补偿相结合，在稀疏约束准则下获取更真实
+                                                                                  减、频率降低、相位畸变. 常规的地震反演大多数是
+的地下反射结构，重构 Q 补偿后的高分辨率地震资
+                                                                                  基于稳态褶积模型推导而来，并没有考虑到地震子
+料. 并且针对不同长度时窗下谱比法估算的 Q 模
+                                                                                  波是与品质因子 Q 有关的非稳态形态. 由于品质因
+型，进一步创新性提出利用非稳态反演补偿后的地
+震数据深浅层地震能量相对误差，评估和优选最佳                                                            子 Q 的影响，地震子波的振幅、频率和相位是时变
+
+地层 Q 模型及对应的非稳态反演重构的地震数据.                                                          的，这些时变特性会严重影响检波器接收到的地震
+相较于利用扫描 Q 策略同时估算反射系数和 Q 值                                                         信号质量. 因此，在稳态褶积模型中引入品质因子
+的反射系数反演 (Aghamiry and Gholami, 2018; Ma et                                        Q 可以大幅度提升地震反演精度.
+al., 2018; Cheng et al., 2020, 2021)，新方法采用非稳态                                             目前，有研究者已经详尽地介绍和推导了非稳
+反演补偿后的地震数据深浅层能量一致性评估 Q，                                                           态正演模型 (Bickel and Natarajan, 1985; Wang, 2006).
+更遵循地震波在地层中传播时的衰减机制. 在实际                                                           基于 Kjartansson Q 衰减模板 (Kjartansson, 1979) 的非
+地震资料处理时，反演反射系数并非越稀疏越合适.                                                           稳态褶积模型可以表示为
+
+                                               ■                            ■( ) 1
+                                                                            ||| ω − πQ(τ)        ( )− 1      ■
+                                                                                                             |||
+                                                                                                                         ■
+                                               |||∫                                                                      |||
+                            1 ∫ +∞                                     −iωτ   ||■         −   i   ω  πQ(τ)
+                                                                                                           −1  ||■
+                                                 |  +∞                                                                     |
+                                      r(τ) |||||                                                                   dω||||| dτ，
+                                                                                  ω0        2Q(τ) ω0
+                   d(t) =                              W(ω)eiωt e−iωτ e                                                                                                      (1)
+                            2π   0               ■ −∞                                                                      ■
+
+
+式 中 ， i 为 虚 数 单 位 ， d(t) 为 地 震 记 录 ， W(ω) 为 初 始                                   Q 的正演模型称为非稳态褶积模型，其对应的反问
+子波 w(t) 的频率域形式，ω=2πf 为圆频率，f 为频率，                                                  题称为非稳态反演或反褶积.
+ω0=2πf0 为 参 考 圆 频 率 ， f0 为 参 考 频 率 ， τ 为 走 时 ，                                            为 了 简 明 表 示 式 (1)， 定 义 地 层 衰 减 因 子 α(ω,
+Q(τ) 为走时表示 τ 时对应的地层 Q 值. 上述涉及到                                                    τ) 为
+
+                                        ■( ) 1                ( )− 1      ■                   ■( ) 1            ■
+                                        ||    − πQ(τ)                     |||                 ||   − πQ(τ)      ||           (       )− 1
+                                 −iωτ|||■ ωω                   ω            ||■        −iωτ|||■ ωω         −1|||■
+                                                                  πQ(τ)
+                                                      − 2Q(τ)
+                                                          i
+                                                               ω0       −1                                             −ωτ       ω    πQ(τ)
+                    α(ω, τ) = e             0
+                                                                                  =e             0
+                                                                                                                     e 2Q(τ) ω0               ，                              (2)
+
+
+式 (2) 中乘积项第一项描述的是地震波相位畸变和                                                         品质因子 Q 的滤波效应，又包含了地震子波的滤波
+速度频散 (Walden, 1985)，第二项描述的是地震波振                                                   效应. 当 Q 趋于无穷大时，α(ω, τ) 收敛于 1，即：
+幅的衰减. 此时，式 (1) 可以表示为简洁形式：                                                                                                           ■( ) 1
+                                                                                                                                    ||
+                                                                                                                                                      ■
+                                                                                                                                                      ||
+                                                                                                                                         − πQ(τ)                   (      )− 1
+                     [∫ +∞                         ]                                                                         −iωτ|||■ ωω         −1|||■
+         1 ∫ +∞
+                                                                                                                                                                −ωτ ω      πQ(τ)
+                                                                                                                                                               2Q(τ) ω0
+ d(t) =         r(τ)       W(ω)eiωt e−iωτ α(ω, τ)dω dτ.                               lim α(ω,τ) = lim e                                0
+                                                                                                                                                           e
+        2π 0           −∞                                                          Q(τ)→∞                    Q(τ)→∞
+                                                      (3)                                                = 1.
+                                                                                                                                                                                 (4)
+       很明显，式 (3) 所示的非稳态褶积模型既包含
+  2期                                                           程亮等：基于非稳态稀疏反演的地震资料拓频处理                                                                      699
+
+
+     地震波在地下传播过程中的衰减量趋于零，式                                                                (7) 可被改写为
+(3) 退化为常规稳态褶积模型：                                                                                                               2
+                                                                                                                                      ∑
+                                                                                                                                      num
+                        [∫ +∞                  ]                                                   O(r) =∥d   obs
+                                                                                                                    − G(Qeﬀ )r∥2 +          λ j β j (r)，
+            1 ∫ +∞
+                                                                                                                                                             (8)
+    d(t) =         r(τ)       W(ω)eiωt e−iωτ dω dτ.                                (5)                                                j=1
+           2π 0           −∞
+                                                                                         式中 Qeff 为地层的等效 Q 值，G(Qeff) 是非稳态的，即
+     为简化反演，一般认为地震子波是给定或已知
+                                                                                         地震波频率和振幅会随着传播时间而发生衰减，这
+的. 在非稳态反演过程中，假设初始的地震子波已
+                                                                                         也符合地震波在实际地下介质中的传播规律. 在初
+知 ， 式 (3) 所 示 的 非 稳 态 褶 积 模 型 可 改 写 为 矩 阵
+                                                                                         始地震子波和衰减模型 Qeff 均已知的情况下，可以
+形式：
+                                                                                         通 过 最 小 化 式 (8) 提 取 反 射 系 数 r. 式 (8) 中 正 则 化
+                                         d = G(q)r，                                (6)
+                                                                                         个数应视情况而定，多个正则化项可以尽可能地将
+式中 d 为地震数据；G(q)=F (WA) 为衰减子波矩阵，                       −1
+                                                                                         先验信息转化为约束条件，提高反演精度，但也存
+每一列代表了对应时间深度上的衰减 (时变) 子波；                                                                在如何选取合适正则化参数的难题.
+W 为地震子波 W(ω) 的矩阵形式，A 为衰减因子 α(ω, τ)                                                           基于地层稀疏反射结构的假设，本文采用具有
+的矩阵形式，F−1 为反傅里叶算子矩阵；q=[Q1, Q2, …,                                                        稀 疏 表 征 的 准 则 函 数 p 范 数 (0<p<1) 作 为 式 (8) 的
+QM]T 为 地 层 Q 向 量 ， T 为 转 置 符 号 ； M 为 地 震 记 录                                             约束，此时式 (8) 可改写为
+长度；r 为反射系数序列. 通过计算合成地震记录
+                                                                                                                                      λ ∑ || || p
+                                                                                                                                            M
+                                                                                                                                  2
+d 和观测地震数据 dobs 之间的残差，即数据匹配项，                                                                       O(r) =∥dobs − G(Qeﬀ )r∥2 +               |r j | ，         (9)
+                                                                                                                                      p j=1
+再给数据匹配项附加不同的正则化约束条件，构建
+反演目标函数：                                                                                      从式 (9) 中提取反射系数 r 是一个最小寻优的
+                                                             ∑
+                                                             num                         过程. 对式 (9) 关于反射系数 r 求导，并令导数等于
+                                                 2
+              O(r) =∥d             obs
+                                         − G(q)r∥2 +               λ j β j (r)，    (7)   0，可得：
+                                                             j=1
+                                                                                                                           M [| |
+                                                                                                                           ∑                      ]
+                                                                                                   G(Qeﬀ )T G(Qeﬀ )r+λ        ||r || p−1 ·sign(r )
+式 中 ， λj 为 正 则 化 参 数 ， βj(r) 为 正 则 化 约 束 项 ，                                                                                     j              j
+                                                                                                                            j=1
+num 为正则化的个数，“∑”表示求和运算. 逐点估算
+地层的 Q 值难度较大，因此常常只需估算一个等效                                                                                   = G(Qeﬀ ) d    T obs
+                                                                                                                                  ，                         (10)
+
+Q 值代替 q 来表征地层的吸收衰减作用，目标函数                                                                进一步化简为
+
+                                            [                                                                ]−1
+                                         r = G(Qeﬀ )T G(Qeﬀ )+λ·Diag(|r1 | p−2 ,|r2 | p−2 ,· · ·,|r M | p−2 ) G(Qeﬀ )T dobs ，                              (11)
+
+
+式 中 ， Diag 为 对 角 矩 阵 . 注 意 到 式 (11) 等 式 两 边 同                                            束 后 得 到 一 个 经 过 Q 补 偿 的 地 层 反 射 系 数 序 列 r，
+时包含反射系数 r，因而不能直接求解. 本文采取反                                                                即 r(k ). 可 以 根 据 实 际 需 求 选 取 合 适 的 地 震 子 波
+                                                                                             max
+
+
+复 加 权 迭 代 法 (Lai and Wang, 2011; Zuo et al.,                                             w 重构地震数据：
+2013) 求解式 (11)，具体步骤如下：
+                                                                                                                     dcon = w∗r，                            (12)
+     ① 输 入 ： 子 波 矩 阵 G(Qeff)， 观 测 地 震 数 据 d ，                                      obs
+
+
+最大迭代次数 kmax，范数 p.                                                                        式中，dcon 是经过非稳态反演进行了 Q 补偿的重构
+
+     ② 初始化：r(0)=G(Qeff)Tdobs.                                                            地震数据.
+
+     ③ 循环迭代：                                                                                 本文采取谱比法估算 Q 进行非稳态反演补偿
+     for k=1:kmax                                                                        地层的吸收衰减. 谱比法是求取两个深度处的子波
+        (k)
+     U =Diag[|r1           (k−1) p−2
+                                     | , |r2     (k−1) p−2
+                                                     | , …, |rM        (k−1) p−2
+                                                                            | ]          进行频谱分析，根据频谱比的斜率确定关于品质因
+       (k)                 T
+     r =(G(Qeff) G(Qeff) + λU ) G(Qeff) d             (k) −1            T obs            子 Q 的函数，提取 Q 值，但时窗长度会对谱比法估
+     end                                                                                 算 Q 造 成 一 定 的 影 响 (吴 琳 , 2011; Lupinacci and
+     ④ 输出：r           (k
+                        max
+                               )
+                                .                                                        Oliveira, 2015). 为了进一步提高 Q 模型的精度及非
+     r 和 U 分别为第 k 次迭代对应的反射系数和
+       (k)      (k)
+                                                                                         稳态反演的补偿效果，针对不同长度时窗的地震数
+加权矩阵，其中 r =[r1 , r2 , …, rM ] ，迭代循环结
+                               (k)         (k)      (k)             (k) T
+                                                                                         据，利用谱比法估算地层等效 Q 值：
+ 700                                      地 球 物 理 学 报 （ Chinese J. Geophys.）                                                                  68 卷
+
+            [                               ]
+         q = QWin1 ,· · ·,QWink ,· · ·,QWinN ，              (13)      分别选取固定长度为 T的深浅层地震数据
+                                                                      dTcon      (QWink ) 和 dTcon (QWink ) 进行傅里叶变换：
+式 中 ， N 表 示 时 窗 个 数 ； Wink 表 示 设 计 的 第 k 个 时                              shallow                deep
+                                                                                                  ∫ +∞
+                                                                                                                              −2πi f t
+窗 (1≤k≤N)， 值 得 注 意 的 是 向 量 Wink 同 时 表 示 浅                                 T shallow (QWink , f ) =
+                                                                         Dcon                           T shallow (QWink ,t)e
+                                                                                                       dcon
+                                                                                                           0
+                                                                                                                                       dt,
+层和深层的时窗，因此 Wink 包含两个元素，即相同                                                                            1 ⩽k⩽ N，                                    (15)
+长 度 的 浅 层 和 深 层 时 窗 ， 如 Wink=[0 ~ 50 ms, 850 ~                                                        ∫ +∞
+                                                                                                                               −2πi f t
+900 ms]； QWink 为利用谱比法从时窗为 Wink 的地震                                             Dcon
+                                                                                T deep (Q Wink , f ) =      T deep (QWink ,t)e
+                                                                                                           dcon                         dt,
+                                                                                                           0
+数据中提取的等效 Q 值. 针对不同等效 Q 值，通过                                                                           1 ⩽k⩽ N，                                    (16)
+式 (11) 求 取 对 应 的 非 稳 态 反 演 反 射 系 数 r(QWink ) ，                        式中，t 为时间，f 为频率，Tshallow 表示长度为 T 的浅
+选取地震子波 w 重构不同 Q 值对应的非稳态反演                                             层地震数据时窗，Tdeep 表示长度为 T 的深层地震数
+补偿后的高频地震数据 dcon (QWink ) ：                                            据时窗， dTcon      (QWink ,t) 和 dTcon (QWink ,t) 分别为向量
+                                                                              shallow                 deep
+         dcon (QWink ) = w∗r(QWink ), 1 ⩽k⩽ N.              (14)      dTcon         (QWink ) 和dTcon (QWink ) 中的元素，Dcon
+                                                                                                                   T                       (QWink , f )
+                                                                          shallow                   deep                         shallow
+
+                                                                        T deep (QWink , f ) 分别表示dT shallow (QWink ) 和dT deep (QWink )
+                                                                      和Dcon                      con                  con
+       为了验证不同 Q 值对应的重构地震数据衰减
+补偿效果，通过计算深浅层地震数据有效频带                                                  傅里叶变换结果的不同频率分量. 不同 Q 值对应的
+fmin→fmax 内振幅的相对误差，优选谱比法估算的等                                          非稳态反演补偿后的地震数据深浅层振幅谱相对误
+效 Q 值及对应的非稳态反演补偿后的地震数据.                                               差可以表示为
+
+                           ||                                       )} ∑ f = f { (                             )}||
+                            ||∑ f = fmax {abs (Dcon     (QWink , f ) − f = fmax abs Dcon          (Q      , f )   ||
+                             | f=fmin           T
+                                                shallow                       min          T deep    Wink          |
+          erro(QWink ) =                         ∑ f = fmax { ( con                     )}                           , 1 ⩽k⩽ N，                  (17)
+                                                     f=f
+                                                             abs DT        (QWink , f )
+                                                      min            shallow
+
+式中，“abs”表示复数求振幅运算，“| |”为绝对值运算符，通过最优化误差值，可以确定最优的 Q 值及对应非
+稳态反演补偿数据：
+                                        [                                                  ]
+                             Qbest = min erro(QWin1 ),· · ·,erro(QWink ),· · ·,erro(QWinN ) ，                                                    (18)
+
+
+式中，“min”表示最优化算法. 因此，谱比法估算的最                                           2.1        叠置砂体模型测试
+优 Q 值及对应的最优非稳态反演补偿后的地震数                                                          图 1a 是 设 计 的 叠 置 砂 体 模 型 ， 该 模 型 背 景 泥
+据分别为 Qbest 和 d (Qbest).
+                  con
+                                                                      岩 (白 色 ) 速 度 为 2750 m·s−1， 密 度 为 2.27 g·cm−3. 砂
+                                                                      体 (黑色) 由三部分组成，分别为两个等厚度砂条和一组
+2      模型和实际资料处理                                                      叠置的砂体，砂体的速度和密度分别设置为 2500 m·s−1
+                                                                      和 2.10 g·cm−3. 本文利用该模型合成衰减地震记录，
+       为了验证新方法的有效性，本节分别对模型数                                           对比提出的非稳态高分辨率反演和常规稳态反演方
+据和实际数据进行测试. 模型数据是实际生产过程                                               法，旨在说明若忽略 Q 效应，会导致地震分辨率不
+中常见的叠置砂体模型，以及 Marmousi 模型，旨在                                          足，虽然能在一定程度上恢复地层反射界面，但不
+说明非稳态高分辨率稀疏反演相较于常规稳态方法                                                足以精细刻画诸如叠置砂体位置处的薄层，且在反
+能更准确地恢复地层反射结构，提高地震深浅层分                                                射界面处会产生许多地质假象.
+辨率和能量的一致性. 实际数据测试也说明了新方                                                          图 1b 是由图 1a 所示的模型计算得来的反射系
+法能提高地震分辨率，校正地震深浅层分辨率和振                                                数剖面，设置主频为 50 Hz 的 Ricker 子波为初始地
+幅尺度不一致性问题，改善地震数据的保幅性. 模型                                              震子波，给定地层品质因子 Q 为 40，合成的衰减地
+和实际数据处理均表明，对于不同长度时窗谱比法                                                震剖面如图 1c 所示 (加 10% 的随机噪声). 因 Q 衰减
+估算的等效 Q 模型，通过衡量和最优化不同 Q 下非                                            效应，地震剖面由浅至深反射能量逐渐减弱，且产
+稳态反演重构的地震数据深浅层振幅的相对误差，                                                生一定的相移变化. 对图 1c 所示衰减地震记录进行
+可优选衰减补偿效果最佳的 Q 模型及非稳态反演                                               频谱分析 (图 1d) 可知，地震高频损失比较严重，主
+重构的高分辨率地震数据.                                                          频降低到了 40 Hz 左右. 在常规稳态地震反演中，常
+   2期                                                程亮等：基于非稳态稀疏反演的地震资料拓频处理                                                                          701
+
+
+                                    (a)                                                                    (b)
+                              0.1                                                                0.1
+
+
+                        t/s   0.2                                                                0.2
+
+
+
+
+                                                                                     t/s
+                              0.3                                                                0.3
+
+                              0.4                                                                0.4
+
+                              0.5                                                                0.5
+                                                50         100           150                                          50       100       150
+                                                        Trace                                                               Trace
+                                                                                                 0.4
+                                    (c)                                                                    (d)
+                              0.1
+                                                                                                 0.3
+
+
+
+
+                                                                                     Amplitude
+                              0.2
+                        t/s
+
+
+
+
+                                                                                                 0.2
+                              0.3
+
+                                                                                                 0.1
+                              0.4
+
+                              0.5                                                                0.0
+                                                50         100           150                           0         20    40     60    80   100   120
+                                                        Trace                                                            Frequency/Hz
+
+                                                        图1        叠置砂体模型及合成衰减地震记录
+(a) 设置的叠置砂体模型；(b) 由模型计算的真实反射系数；(c) 以图 1b 所示的反射系数及衰减子波作为公式 (3) 的输入，合成的衰减地震记录
+                                                         (加 10% 的随机噪声)；(d) 衰减地震记录的振幅谱.
+                  Fig. 1       The designed model of superimposed sand bodies and synthetic attenuation seismic data
+(a) The designed superimposed sand bodies model；(b) The true reflectivity profile which is calculated from the designed superimposed sand bodies model；(c)
+Synthetic attenuated seismic profile which is generated by formula (3) with an attenuated wavelet and the true reflectivity profile of Fig.1b, and added 10%
+                                          random noise；(d) The amplitude spectrum for the synthetic attenuated seismic profile.
+
+通过分析地震频带，选择主频相当的 Ricker 子波作                                                                      致反演反射系数分辨率不足，难以消除叠置砂体位
+为 反 演 地 震 子 波 . 图 2a 和 图 2b 分 别 为 主 频 40 Hz                                                      置处薄互层的干涉，深部地震反射脉冲小于真实
+的 Ricker 子 波 矩 阵 和 对 应 的 常 规 反 演 反 射 系 数 剖                                                       值，且产生许多同极性小脉冲的地质假象.
+面 (其与真实的反射系数剖面 (图 1b) 之间的相似度                                                                     2.2       Marmousi 模型测试
+仅为 71.55%). 图 2c 为利用主频为 50 Hz 初始地震子                                                                        为了进一步探讨本文所提新方法的有效性，本
+波及品质因子 Q=40 所构建的衰减子波矩阵，由于                                                                        小节测试反射结构更为复杂的 Marmousi 模型. 图 3a
+考虑到 Q 衰减效应，子波从浅到深是时变的，图 2d                                                                       为设置的 Marmousi 反射系数模型，相较于 3.1 小节
+为对应的非稳态反演反射系数剖面，其与真实的反                                                                           中的叠置砂体模型，其稀疏性较差，更接近于实际
+射系数剖面 (图 1b) 之间的相似度高达 96.83%. 通过                                                                 地 层 反 射 结 构 . 选 取 主 频 为 30 Hz 的 Ricker 子 波 作
+对比，两种方法都能识别出反射界面位置，常规的                                                                           为初始地震子波，与图 3a 所示的反射系数模型合成
+稀疏反演反射系数剖面信噪比较低，且深部反射能                                                                           无 衰 减 的 地 震 剖 面 (图 3b) 作 为 参 考 . 图 3c 是 无 衰
+量较弱，与浅层能量级别不匹配，砂体叠置位置处                                                                           减 地 震 剖 面 (图 3b) 深 浅 层 振 幅 谱 ， 通 过 对 比 可 知 ，
+刻画不清楚. 考虑地层 Q 衰减时，非稳态稀疏反演                                                                        无衰减时地震剖面深浅层能量和频率基本一致. 图 3d
+得到的反射系数不仅整体信噪比更高，且很大程度                                                                           是所设置的时空变层状 Q 模型，第一层 Q 的变化范
+提升了深浅层能量的匹配度，砂体叠置处顶底反射                                                                           围为 30 ~ 40，第二层 Q 的变化范围为 40 ~ 60，第三
+刻画比较清晰. 为了进一步凸显新方法的优势，抽取                                                                         层 Q 的变化范围为 70 ~ 110，通过转换求出该 Q 模
+显示第 80 道 (砂体叠置处) 衰减地震记录、两种反                                                                      型的等效 Q 值约为 42. 利用初始地震子波，反射系
+演反射系数及真实反射系数，如图 2e 所示，非稳态                                                                        数模型 (图 3a) 和 Q 模型 (图 3d) 合成衰减地震剖面，
+反演反射系数能准确识别界面位置，且恢复了地震                                                                           并 加 5% 的 随 机 噪 声 ， 如 图 3e 所 示 . 对 衰 减 地 震 剖
+能量损失，深部反射系数脉冲大小与真实值更为接                                                                           面深浅层进行频谱分析 (图 3f) 可知，Q 衰减作用导
+近. 而常规稳态稀疏反演未考虑地层的衰减机制，导                                                                         致深浅层能量和频率差异很大，深层地震高频和振
+  702                                                              地 球 物 理 学 报 （ Chinese J. Geophys.）                                                               68 卷
+
+
+
+                                                                                             0.8
+                              0.1                                                                          0.1
+                                                                                             0.6
+                              0.2                                                            0.4           0.2
+
+
+
+
+                                                                                                     t/s
+                        t/s
+
+                                                                                             0.2
+                              0.3                                                                          0.3
+                                                                                             0.0
+                              0.4                                                            -0.2          0.4
+                                          (a)                                                                    (b)
+                              0.5                                                            -0.4          0.5
+                                                 0.1   0.2         0.3    0.4          0.5                                          50            100        150
+                                                             τ/s                                                                               Trace
+
+
+                                                                                             0.8
+                              0.1                                                                          0.1
+                                                                                             0.6
+                              0.2                                                            0.4           0.2
+
+
+
+
+                                                                                                     t/s
+                        t/s
+
+
+
+
+                                                                                             0.2
+                              0.3                                                                          0.3
+                                                                                             0.0
+                              0.4                                                            -0.2          0.4
+                                          (c)                                                -0.4                (d)
+                              0.5                                                                          0.5
+                                                 0.1   0.2         0.3    0.4          0.5                                          50            100        150
+                                                             τ/s                                                                               Trace
+                                                                                                 真实反射系数                                    真实反射系数
+                                                       衰减地震记录                                    非稳态反演反射系数                                 常规稳态反演反射系数
+                                (e) 0.00                                              0.00                                          0.00
+
+
+                                          0.05                                        0.05                                          0.05
+
+
+                                          0.01                                        0.01                                          0.01
+
+
+                                          0.15                                        0.15                                          0.15
+
+
+                                          0.20                                        0.20                                          0.20
+                                    t/s
+
+
+
+
+                                          0.25
+                                                                                t/s
+
+
+
+
+                                                                                      0.25
+                                                                                                                              t/s
+
+
+
+
+                                                                                                                                    0.25
+
+
+                                          0.30                                        0.30                                          0.30
+
+
+                                          0.35                                        0.35                                          0.35
+
+
+                                          0.40                                        0.40                                          0.40
+
+
+                                          0.45                                        0.45                                          0.45
+
+
+                                          0.50                                        0.50                                          0.50
+                                             -0.05      0.00             0.05            -0.05       0.00              0.05            -0.05      0.00       0.05
+                                                       Amplitude                                    Amplitude                                    Amplitude
+
+                                                             图2          叠置砂体模型 (图 1) 的反演结果对比
+(a) 稳态子波矩阵；(b) 常规稳态稀疏反演得到的反射系数 (与图 1b 所示的真实反射系数剖面相似度为 71.55%)；(c) 非稳态子波矩阵；(d) 非稳态
+稀疏反演得到的反射系数 (与图 1b 所示的真实反射系数剖面相似度为 96.83%)；(e) 第 80 道衰减地震记录、反演反射系数及真实反射系数的对比.
+                    Fig. 2          The inversion comparison for the synthetic data of superimposed sand bodies in Fig. 1
+(a) The stationary wavelet matrix；(b) The reflectivity profile by conventional stationary sparse inversion (only 71.55% similarity to the true reflectivity profile
+in Fig. 1b)； (c) The nonstationary wavelet matrix； (d) The reflectivity profile by nonstationary sparse inversion in this paper (96.83% similarity to the true
+        reflectivity profile in Fig. 1b)；(e) The 80-th trace comparison of the attenuation seismic record, the inverted reflectivity and the true reflectivity.
+
+
+幅 迅 速 衰 减 ， 深 层 地 震 资 料 主 频 降 低 到 了 22 Hz                                                                  长度时窗的深浅层地震数据，利用谱比法求取地层
+左右.                                                                                                        等效 Q 值. 如表 1 所示，时窗长度对谱比法估算的
+        针对图 3e 所示的衰减地震剖面，分别选取不同                                                                            等效 Q 值产生了一定影响. 将初始地震子波、衰减
+   2期                                                           程亮等：基于非稳态稀疏反演的地震资料拓频处理                                                                                                 703
+
+                                     0                                                                         0
+                                             (a)                                                                       (b)
+
+                                   200                                                                       200
+
+
+                                   400                                                                       400
+                      t/ms
+
+
+
+
+                                                                                                 t/ms
+                                   600                                                                       600
+
+
+                                   800                                                                       800
+
+                                                          200        400         600                                               200        400             600
+                                                                   Trace                                                                    Trace
+                                         ×10-3                                                                 0                                                        110
+                                   2.5
+                                             (c)                    0~100 ms seismic data                              (d)
+                                                                    600~700 ms seismic data                                                                             100
+                                   2.0                                                                       200                                                        90
+                                                                                                                                                                        80
+                       Amplitude
+
+
+
+
+                                   1.5                                                                       400
+
+
+
+
+                                                                                                 t/ms
+                                                                                                                                                                        70
+                                   1.0                                                                                                                                  60
+                                                                                                             600
+                                                                                                                                                                        50
+                                   0.5
+                                                                                                             800                                                        40
+                                   0.0
+                                         0           20         40       60      80        100                                    200       400         600
+                                                                Frequency/Hz                                       ×10-3                  Trace
+                                   0.0                                                                       2.0
+                                             (e)                                                                       (f)                   0~100 ms seismic data
+                                                                                                                                             600~700 ms seismic data
+                                   0.2
+                                                                                                             1.5
+                                                                                                 Amplitude
+
+
+
+
+                                   0.4
+                       t/ms
+
+
+
+
+                                                                                                             1.0
+
+                                   0.6
+                                                                                                             0.5
+                                   0.8
+                                                                                                             0.0
+                                                          200        400         600                               0          20          40      60          80        100
+                                                                   Trace                                                                 Frequency/Hz
+
+                                                                     图3         Marmousi 模型及合成地震记录
+(a)Marmousi 反射系数模型；(b) 无衰减的合成地震记录；(c) 无衰减地震记录深浅层振幅谱比较；(d) 设计的时空变层状 Q 模型；(e) 合成的衰减
+                                                          地震记录 (加 5% 的随机噪声)；(f) 衰减地震记录深浅层振幅谱比较.
+                                                    Fig. 3      Marmousi model and the related synthetic seismic profiles
+(a) Marmousi reflectivity model； (b) Synthetic attenuation-free seismic profile； (c) The amplitude spectrum comparison between the deep and shallow
+attenuation-free seismic profile； (d) The designed spatiotemporal variant interval-Q model； (e) Synthetic attenuated seismic profile (with 5% random noise)；
+                                         (f) The amplitude spectrum comparison between the deep and shallow attenuated seismic profile.
+
+                                             表1        不同时窗长度下谱比法估算的等效 Q 值 (均进行了四舍五入处理)
+      Table 1      The equivalent-Q estimated by spectral ratio method when provided different time-window lengths
+                                            (all equivalent-Q values are rounded)
+     浅层数据时窗/ms                                     0 ~ 30            0 ~ 50             0 ~ 70                           0 ~ 90              0 ~ 110                0 ~ 130     0 ~ 150
+     深层数据时窗/ms                                870 ~ 900             850 ~ 900          830 ~ 900                       810 ~ 900            790 ~ 900              770 ~ 900   750 ~ 900
+    谱比法求取的等效Q                                       112                94                 75                                 62                39                     32          23
+
+
+地震剖面以及表 1 中估算的一系列等效 Q 值作为                                                                                    深层 (600 ~ 700 ms) 部分，利用式 (17) 计算深浅层地
+式 (11) 的输入，利用反复加权迭代法求取非稳态稀                                                                                   震数据振幅的相对误差 (图 4a)，从图 4a 所示的相对
+疏反演反射系数剖面，进而结合式 (14) 重构非稳态                                                                                   误差曲线可知，当谱比法估算的等效 Q=39 时，重构
+反演补偿后的地震数据. 针对这一系列等效 Q 值及                                                                                    地震数据深浅层振幅相对误差 (9.13%) 最小. 因此通
+对应的非稳态反演补偿重构的地震数据，需要优选                                                                                       过式 (18) 的优选，确定地层等效 Q 为 39(与图 3d 所
+出最优的等效 Q 值及重构的高分辨率地震数据. 截                                                                                    示的 Q 模型的等效 Q 值相当)，并将 Q=39 对应的非
+取非稳态反演重构地震数据的浅层 (1 ~ 100 ms) 和                                                                               稳态反演重构数据作为最终的高分辨率地震数据.
+  704                                                                             地 球 物 理 学 报 （ Chinese J. Geophys.）                                                                    68 卷
+
+                                                 70                                                                             0
+                                                          (a)                                                                           (b)
+                                                 60
+                                                                                                                              200
+
+                          The relative error/%
+                                                 50
+
+                                                 40                                                                           400
+
+
+
+
+                                                                                                                  t/ms
+                                                 30
+                                                                                                                              600
+                                                 20
+
+                                                 10                                                                           800
+                                                 0
+                                                  112            94      75       62      39      32         23                                    200        400         600
+                                                                                  Q                                                                         Trace
+                                                                                                                                  ×10-3
+                                                  0                                                                           2.5
+                                                           (c)                                                                     (d)                      0~100 ms seismic data
+                                                                                                                                                            600~700 ms seismic data
+                                             200                                                                              2.0
+
+
+
+
+                                                                                                                  Amplitude
+                                             400                                                                              1.5
+                        t/ms
+
+
+
+
+                                                                                                                              1.0
+                                             600
+                                                                                                                              0.5
+                                             800
+                                                                                                                              0.0
+                                                                       200          400         600                                 0         20          40      60      80      100
+                                                                                 Trace                                                                   Frequency/Hz
+                                                 4                                                                              0
+                                                          (e)                    The attenuation-free data                              (f)
+                                                                                 The attenuation data
+                                                                                 The reconstructed data                       200
+                                                 3
+                                Amplitude
+
+
+
+
+                                                                                                                              400
+                                                                                                                  t/ms
+
+
+
+
+                                                 2
+
+                                                                                                                              600
+                                                 1
+                                                                                                                              800
+                                                 0
+                                                      0          20       40    60    80         100     120                                       200        400         600
+                                                                           Frequency/Hz                                                                     Trace
+                                                      ×10-3
+                                             2.0                                                                                0
+                                                          (g)                     0~100 ms seismic data                                 (h)
+                                                                                  600~700ms seismic data
+                                             1.5                                                                              200
+                        Amplitude
+
+
+
+
+                                                                                                                              400
+                                                                                                                  t/ms
+
+
+
+
+                                             1.0
+
+                                                                                                                              600
+                                             0.5
+                                                                                                                              800
+                                             0.0
+                                                      0           20           40      60       80       100                                       200        400         600
+                                                                              Frequency/Hz                                                                  Trace
+
+                                                                      图4       Marmousi 模型合成地震记录 (图 3) 的反演相关图件
+(a) 当提供给非稳态反演如表 1 所示的等效 Q 值时，非稳态反演补偿后得到的地震数据深浅层振幅的相对误差，很显然当误差最小时，对应的
+Q 值最优 (即等效 Q=39)；(b) 等效 Q=39 时非稳态稀疏反演反射系数 (与图 3a 所示真实反射系数相似度为 87.05%)；(c) 利用图 4b 所示的非稳态
+反演反射系数剖面和初始地震子波褶积重构的地震剖面；(d) 重构地震剖面 (图 4c) 的深浅层振幅谱比较；(e) 无衰减地震剖面 (图 3b)、衰减地
+震剖面 (图 3e) 和重构地震剖面 (图 4c) 振幅谱比较；(f) 对图 3e 所示的加噪衰减地震剖面常规反 Q 滤波 (等效 Q=39) 得到的地震剖面；(g) 图 4f
+所示地震剖面的深浅层振幅谱；(h) 对图 4f 所示常规反 Q 滤波补偿后的地震剖面进行稳态反演得到的反射系数剖面，其与真实反射系数剖面
+                                     (图 3a) 的相似度为 80.11%.
+                                                  Fig. 4              The related nonstationary inversion results for Marmousi model (Fig.3)
+(a) The relative error between the shallow (0 ~ 100 ms) and deep (600 ~ 700 ms) amplitude of the restructured seismic data when providing a series of
+equivalent-Q models shown in Table 1 for the nonstationary sparse inversion proposed in this paper. Apparently, it indicates that, the relative error reaches the
+minimum that of the corresponding equivalent-Q is 39 and optimal； (b) The nonstationary sparse inverted reflectivity when the provided equivalent-Q is 39
+(87.05% similarity to the true reflectivity in Fig. 3a)；(c) The reconstructed seismic profile which is convoluted by the nonstationary sparse inverted reflectivity
+in Fig. 4b and the initial seismic wavelet； (d) The amplitude spectrum comparison between the deep and shallow reconstructed seismic profile in Fig. 4c； (e)
+The amplitude spectrum comparison between the attenuation-free seismic profile in Fig. 3b, the attenuated seismic profile in Fig. 3e and the reconstructed
+seismic profile in Fig. 4c；(f) The seismic profile generated by conventional inverse-Q filtering (equivalent-Q = 39) for the attenuated seismic profile in Fig. 3e；
+(g) The amplitude spectrum comparison between the deep and shallow seismic profile shown in Fig. 4f； (h) The reflectivity profile generated by stationary
+      inversion for the seismic profile compensated by the conventional inverse-Q filtering in Fig. 4f (80.11% similarity to the true reflectivity in Fig. 3a).
+ 2期                        程亮等：基于非稳态稀疏反演的地震资料拓频处理                                     705
+
+
+图 4b 展示的利用反复加权迭代法求取非稳态稀疏                       演效果不如直接对衰减地震资料进行非稳态反演.
+反演反射系数剖面 (等效 Q=39)，由于考虑到 Q 衰减                  理论上，先通过 Q 补偿方法将非稳态地震资料补偿
+效应，非稳态稀疏反演反射系数较准确地恢复了地                         为稳态格式，然后再进行稳态反演可获取与直接进
+下反射结构，其与真实反射系数之间的相似度高达                         行非稳态反演同样的效果. 但此类先补偿 Q 再进行
+87.05%. 为了进一步凸显本文提出方法对稀疏性较                     稳态反演的处理策略非常依赖于所选 Q 补偿方法
+差反射结构的 Q 补偿效果，将非稳态反演反射系数                       对噪声的敏感度. 通过对比，我们也得到了启示，要
+与初始子波进行褶积，重构非稳态反演补偿后的地                         取得理想的衰减补偿效果，Q 补偿方法或策略必须
+震 剖 面 (图 4c). 通 过 对 无 衰 减 地 震 剖 面 (图 3b)、 衰    考虑如何压制噪声. Q 衰减一般是指数型的，对应
+减地震剖面 (图 3e) 和重构地震剖面 (图 4c) 进行频                的 Q 补偿也是指数型的，当 Q 补偿方法无法压制噪
+谱分析 (图 4e) 可知，当考虑到地层衰减时，本文所                    声时，噪声和有效信号会同时被无差别地指数型放
+提出的非稳态稀疏反演可恢复因地层吸收衰减而损                         大，进而降低信噪比. 本文提出的 Q 衰减补偿策略
+失的地震频率和能量，提高深浅层能量和频率的一                         以及文献 (王本锋等, 2014) 中的补偿方法效果明显
+致性. 且重构地震剖面与无衰减地震剖面的振幅谱                        要优于直接常规反 Q 滤波和稳态反演组合策略，究
+基本一致，这不仅说明了本文所提方法及相关算法                         其原因主要是利用反演思路补偿 Q，反演约束项对
+对稀疏性较差反射结构的有效性，也佐证了所估算                         噪声起到了一定的压制作用，这才导致噪声未被无
+的等效 Q=39 是合理的. 因此等效 Q=39 可以替代所                 限放大；另外本文提出的 Q 衰减补偿方法还兼顾评
+设置的复杂时空变层状 Q 模型，对衰减地震资料进                       估和优选最佳的 Q 模型及对应的衰减补偿地震
+行非稳态反演达到 Q 补偿的目的. 另外，非稳态稀                      数据.
+疏反演中的稀疏约束项可以表征层状地层结构的稀                             由上述分析而知，当估算的等效 Q=39 时，能够
+疏性，当反演结果过于稀疏时，可适当降低稀疏权                         较准确地补偿地层的吸收衰减作用，因此等效
+重，进而恢复诸如 Marmousi 这类稀疏性较差的地层                   Q=39 是所设置时空变层状 Q 模型 (图 3d) 较为合理
+结构.                                            的等效值. 为了进一步探讨 Q 估算不准对反演结果
+    在本文方法提出之前，地球物理学者已经提出                       的 影 响 ， 接 下 来 分 别 设 置 Q 值 大 于 和 小 于 39 进 行
+了很多处理非稳态地震资料的反褶积方法，如可先                         衰减地震剖面 (图 3e) 非稳态稀疏反演. 图 5 展示的
+进行 Q 补偿，如反 Q 滤波、构建正则化反演策略补                     是等效 Q 分别大于 (Q=75) 和小于 (Q=23) 估算的最
+偿 Q 衰减 (王本锋等, 2014)，将非稳态地震资料转化                 优等效 Q=39 时，非稳态反演的相关图件. 图 5a 为等
+为 稳 态 形 式 ， 再 进 行 常 规 稳 态 反 射 系 数 反 演 . 图 4f   效 Q=75 时 所 对 应 的 非 稳 态 反 演 反 射 系 数 剖 面 ， 其
+展示的是对加噪衰减地震剖面 (图 3e) 直接进行常                     与真实反射系数之间的相似度为 65.51%. 将图 5a 中
+规 反 Q 滤 波 (等 效 Q=39) 处 理 后 的 结 果 ， 地 震 剖 面     的非稳态反演反射系数与初始子波进行褶积，重构
+深部反射能量加强，基本上恢复了地震深浅层频率                         非稳态反演补偿后的地震剖面 (图 5b). 由于所提供
+和振幅的一致性 (图 4g). 图 4h 为对常规反 Q 滤波补               的 Q 值偏大，默认的地震波传播过程中衰减程度偏
+偿后的地震剖面进行稳态反演得到的反射系数剖                          小，对应的衰减补偿量小于真实衰减量. 相较于无衰
+面，其与真实反射系数的相似度为 80.11%，虽然在                     减地震剖面 (图 3b)，重构的地震剖面深部地震能量
+一定程度上恢复了地层的反射特征，但整体信噪比                         存在补偿不足的现象 (如图 5c 所示深浅层振幅谱对
+偏低.                                            比)，通过分析无衰减地震剖面 (图 3b)，衰减地震剖
+    众所周知，Q 补偿一般都会伴随着放大噪声的                      面 (图 3e) 及重构地震剖面 (图 5b) 振幅谱可知，Q 值
+现象，常规反 Q 滤波方法并没有压制噪声的功能，                       偏大，非稳态反演重构的地震剖面分辨率和能量均
+而本文提出的非稳态反演中稀疏约束项不仅可以表                         未达到理想无衰减地震剖面的级别 (图 5d 所示振幅
+征地层的稀疏结构，且可以起到压制噪声的效果，                         谱). 图 5e 为 Q=23 所对应的非稳态反演反射系数剖
+因此比常规反 Q 滤波和稳态反演组合处理方法，具                       面 ， 其 与 真 实 反 射 系 数 之 间 的 相 似 度 为 73.05%. 将
+有更强的容噪能力. 通过模型试算可知，利用稳态反                       图 5e 中的非稳态反演反射系数与初始子波进行褶
+演处理常规反 Q 滤波补偿后的地震资料，得到的反                       积，重构非稳态反演补偿后的地震剖面 (图 5f). 由于
+射系数与真实反射系数之间的误差相对较大，其反                         所提供的 Q 值偏小，默认的地震波传播过程中衰减
+ 706                                                                    地 球 物 理 学 报 （ Chinese J. Geophys.）                                                                   68 卷
+
+                                          0                                                                        0
+                                                   (a)                                                                      (b)
+
+                                    200                                                                    200
+
+
+                                    400                                                                    400
+                        t/ms
+
+
+
+
+                                                                                                    t/ms
+                                    600                                                                    600
+
+
+                                    800                                                                    800
+
+                                                              200         400         600                                              200       400          600
+                                        ×10-3                          Trace                                                                  Trace
+                                    2.0                                                                            4
+                                         (c)                            0~100 ms seismic data                              (d)                 The attenuation-free data
+                                                                        600~700 ms seismic data                                                The attenuation data
+                                                                                                                                               The reconstructed data
+                                    1.5                                                                            3
+
+
+
+
+                                                                                                       Amplitude
+                        Amplitude
+
+
+
+
+                                    1.0                                                                            2
+
+
+                                    0.5                                                                            1
+
+
+                                    0.0                                                                            0
+                                              0          20          40      60       80      100                      0          20     40    60     80       100     120
+                                                                    Frequency/Hz                                                          Frequency/Hz
+                                          0                                                                        0
+                                                   (e)                                                                      (f)
+
+                                    200                                                                    200
+
+
+                                    400                                                                    400
+                        t/ms
+
+
+
+
+                                                                                                    t/ms
+
+
+
+
+                                    600                                                                    600
+
+
+                                    800                                                                    800
+
+                                                              200         400         600                                              200       400          600
+                                                                       Trace                                                                  Trace
+                                              ×10-3
+                                          4                                                                        8
+                                                  (g)                   0~100 ms seismic data                              (h)                 The attenuation-free data
+                                                                                                                                               The attenuation data
+                                                                        600~700 ms seismic data                                                The reconstructed data
+                                          3                                                                        6
+                                                                                                       Amplitude
+                              Amplitude
+
+
+
+
+                                          2                                                                        4
+
+
+                                          1                                                                        2
+
+
+                                          0                                                                        0
+                                              0          20          40      60       80      100                      0          20     40    60     80       100     120
+                                                                    Frequency/Hz                                                          Frequency/Hz
+
+                                                  图5          当 Q 不准时，Marmousi 模型 (图 3) 对应的非稳态反演相关图件
+(a) 当等效 Q=75(大于估算的最优等效 Q=39) 时对应的非稳态稀疏反演反射系数 (与真实反射系数相似度为 65.51%)；(b) 利用图 5a 所示的非稳
+态反演反射系数剖面和初始地震子波褶积重构的地震剖面；(c) 图 5b 重构地震剖面的深浅层振幅谱比较；(d) 无衰减地震剖面 (图 3b)、衰减地
+震剖面 (图 3e) 和重构地震剖面 (图 5b) 振幅谱比较；(e) 当等效 Q=23(小于估算的最优等效 Q=39) 时对应的非稳态稀疏反演反射系数 (与真实反
+射系数相似度为 73.05%)；(f) 利用图 5e 所示的非稳态反演反射系数剖面和初始地震子波褶积重构的地震剖面；(g) 图 5f 重构地震剖面的深浅
+               层振幅谱比较；(h) 无衰减地震剖面 (图 3b)、衰减地震剖面 (图 3e) 和重构地震剖面 (图 5f) 振幅谱比较.
+       Fig. 5     The related nonstationary inversion results for Marmousi model in Fig. 3 when providing an inaccurate Q
+(a) When the provided equivalent-Q (Q=75) is greater than the estimated optimal equivalent-Q (Q=39), the corresponding nonstationary sparse inverted
+reflectivity (65.51% similarity with the true reflectivity)； (b) The reconstructed seismic profile which is convoluted by the nonstationary sparse inverted
+reflectivity in Fig. 5a and the initial seismic wavelet； (c) The amplitude spectrum comparison between the deep and shallow reconstructed seismic profile in
+Fig. 5b； (d) The amplitude spectrum comparison between the attenuation-free seismic profile in Fig. 3b, the attenuated seismic profile in Fig. 3e and the
+reconstructed seismic profile in Fig. 5b；(e) When the provided equivalent-Q (Q=23) is less than the estimated optimal equivalent-Q (Q=39), the corresponding
+nonstationary sparse inverted reflectivity (73.05% similarity with the true reflectivity)； (f) The reconstructed seismic profile which is convoluted by the
+nonstationary sparse inverted reflectivity in Fig. 5e and the initial seismic wavelet； (g) The amplitude spectrum comparison between the deep and shallow
+reconstructed seismic profile in Fig. 5f； (h) The amplitude spectrum comparison between the attenuation-free seismic profile in Fig. 3b, the attenuated seismic
+                                                 profile in Fig. 3e and the reconstructed seismic profile in Fig. 5f.
+  2期                                程亮等：基于非稳态稀疏反演的地震资料拓频处理                                                          707
+
+
+程度偏大，衰减补偿量大于真实衰减量. 相较于无衰                                      (11) 的输入求解反射系数，进而结合式 (14) 重构非
+减地震剖面 (图 3b)，重构地震剖面深部地震频率和                                    稳态反演补偿后的地震数据. 截取不同等效 Q 值非
+能 量 存 在 过 补 偿 的 现 象 (如 图 5g 所 示 深 浅 层 振 幅                     稳态反演重构地震数据的浅层 (1 ~ 100 ms) 和深层
+谱)，且信噪比低. 通过分析无衰减地震剖面 (图 3b)，                                 (600 ~ 700 ms) 部分，利用式 (17) 计算深浅层地震数
+衰减地震剖面 (图 3e) 及重构地震剖面 (图 5f) 振幅                               据振幅的相对误差 (图 6d)，优选出相对最优的等效
+谱可知，Q 值偏小时，非稳态反演重构的地震剖面分                                      Q 值及重构的高分辨率地震数据. 当谱比法估算的
+辨率和能量均超出了理想无衰减地震剖面的级别                                         等 效 Q=52 时 ， 重 构 地 震 数 据 深 浅 层 振 幅 相 对 误 差
+(图 5h 所示振幅谱)，地震深浅层频率和能量的一致                                    (10.52%) 最小. 因此通过式 (18) 的优选，确定地层等
+性差，导致重构的地震剖面发生严重畸变.                                           效 Q 为 52，并将 Q=52 对应的非稳态反演重构数据
+       为了更进一步探讨本文方法的普适性，在                                     作为最终的高分辨率地震数据 (图 6f). 通过对无衰
+Marmousi 反射系数模型中设置强反射界面. 如图 6a                                减地震剖面 (图 6b)、衰减地震剖面 (图 6c) 和重构地
+所示，增大模型中箭头所指反射界面的反射系                                          震剖面 (图 6f) 进行频谱分析 (图 6g) 可知，重构的地
+数 值 ， 构 建 深 层 强 反 射 界 面 . 利 用 图 6a 所 示 反                      震剖面虽然在一定程度上补偿了地层的 Q 衰减作
+射系数模型与初始地震子波合成无衰减地震剖                                          用，但还存在一定的 Q 补偿不足的现象. 究其原因，
+面 (图 6b) 作 为 参 考 . 图 6c 展 示 的 是 利 用 初 始 地 震                   主要是利用补偿后的地震数据深浅层地震能量相对
+子波，反射系数模型 (图 6a) 和 Q 模型 (图 3d) 合成衰                            误差评估 Q 时，所选择的深层数据 (600 ~ 700 ms) 存
+减地震剖面，并加 5% 的随机噪声. 对比图 6b 和图 6c                               在强反射界面，这就导致了所优选的 Q 值偏大 (图 3d
+可知，由于地层的吸收衰减作用，地震剖面整体衰                                        所示的 Q 模型的等效 Q 值约为 42)，地震剖面整体
+减严重.                                                          出现 Q 补偿不足的现象. 由此可见，强反射界面会
+       从衰减地震剖面上 (图 6c) 选取不同长度时窗                               对该方法评估 Q 值造成一定的影响，在实际地震资
+的深浅层地震数据，利用谱比法求取地层等效                                          料处理过程中，可以结合测井解释的地质和地层信
+Q 值，如表 2 所示. 将初始地震子波、衰减地震剖面                                   息，选取深层和浅层数据时尽量避开强反射层，以
+(图 6c) 以 及 表 2 中 估 算 的 一 系 列 等 效 Q 值 作 为 式                    免 Q 的估算和评估出现较大偏差.
+
+                        表2        不同时窗长度下谱比法估算的等效 Q 值 (均进行了四舍五入处理)
+      Table 2   The equivalent-Q estimated by spectral ratio method when provided different time-window lengths
+                                         (all equivalent-Q values are rounded)
+      浅层数据时窗/ms          0 ~ 30      0 ~ 50      0 ~ 70      0 ~ 90      0 ~ 110     0 ~ 130     0 ~ 150     0 ~ 170
+      深层数据时窗/ms         670 ~ 700   650 ~ 700   630 ~ 700   610 ~ 700   590 ~ 700   570 ~ 700   550 ~ 700   530 ~ 700
+  谱比法求取的等效Q               156         113          92          77          61          52          37          34
+
+
+2.3    实际资料处理                                                 的主频大概为 50 Hz，选取主频为 50 Hz 的 Ricker 子
+       用本文提出的非稳态高分辨率处理方法继续                                    波作为初始地震子波. 其次，利用谱比法估算不同长
+对 X 油田实际地震资料进行测试. 该地区构造复                                      度时窗对应的等效 Q 值进行非稳态反演：从 7a 所示
+杂，断层和薄互层发育，相对于浅层，深层能量和高                                       的地震数据中，分别选取不同长度时窗的深浅层数
+频衰减严重，已难以支撑薄互层的解释工作.                                          据，利用谱比法求取对应的地层等效 Q 值 (表 3 所示)，
+       图 7a 展 示 的 是 原 始 纯 波 地 震 数 据 ， 采 样 间 隔                 将初始地震子波、原始地震剖面以及表 3 中估算的
+为 2 ms. 对比深浅层振幅谱 (图 8a) 可知，地震资料                               一 系 列 等 效 Q 值 作 为 式 (11) 的 输 入 ， 进 而 结 合 式
+浅层高低频地震信息丰富，由于黏弹性地层对地震                                        (14) 选取宽带子波重构 Q 补偿后的高分辨率地震数
+波的衰减吸收作用，地震波传播到深层频率和振幅                                        据. 再次，确定地层的最优等效 Q 值及非稳态反演
+能量均衰减了一倍之多. 不同于常规高分辨率处理                                       补偿的地震数据：截取非稳态反演重构地震数据的
+方法，新方法以地震波传播规律为准则，采用非稳                                        浅 层 (1 ~ 100 ms) 和 深 层 (700 ~ 800 ms) 部 分 ， 利 用
+态反演框架补偿地震波因 Q 衰减而损失的能量和                                       式 (17) 计 算 深 浅 层 地 震 数 据 振 幅 的 相 对 误 差 ， 从
+频率. 首先，确定初始地震子波：截取浅层地震数据                                      图 7b 所示的相对误差曲线可知，当谱比法估算的等
+进行频谱分析，如图 8a 所示，浅层地震数据 (0 ~ 100 ms)                           效 Q=80 时 ， 重 构 地 震 数 据 深 浅 层 振 幅 相 对 误 差
+  708                                                 地 球 物 理 学 报 （ Chinese J. Geophys.）                                                                                       68 卷
+
+                                 0                                                                                    0
+                                     (a)                                                                                     (b)
+
+                               200                                                                               200
+
+
+                               400                                                                               400
+                        t/ms
+
+
+
+
+                                                                                             t/ms
+                               600                                                                               600
+
+
+                               800                                                                               800
+
+                                            200        400                         600                                                    200           400         600
+                                                     Trace                                                                                            Trace
+                                 0                                                                                   70
+                                     (c)                                                                                  (d)
+                                                                                                                     60
+                               200
+
+
+
+
+                                                                                              The relative error/%
+                                                                                                                     50
+
+                               400                                                                                   40
+                        t/ms
+
+
+
+
+                                                                                                                     30
+                               600
+                                                                                                                     20
+
+                               800                                                                                   10
+
+                                                                                                                      0
+                                            200        400                         600                                 156         113     92    77       61   52    37   34
+                                                     Trace                                                                                            Q
+                                 0                                                                                    0
+                                     (e)                                                                                     (f)
+
+                               200                                                                               200
+
+
+                               400                                                                               400
+                        t/ms
+
+
+
+
+                                                                                             t/ms
+
+
+
+
+                               600                                                                               600
+
+
+                               800                                                                               800
+
+                                            200        400                         600                                                    200           400         600
+                                                     Trace                                                                                            Trace
+                                                           4
+                                                                             (g)                      The attenuation-free data
+                                                                                                      The attenuation data
+                                                                                                      The reconstructed data
+                                                                     3
+                                                         Amplitude
+
+
+
+
+                                                                     2
+
+
+                                                                     1
+
+
+                                                                     0
+                                                                         0         20    40    60     80                                 100    120
+                                                                                          Frequency/Hz
+
+                                       图6    Marmousi 模型 (带强反射界面) 对应的非稳态反演相关图件
+(a) 带强反射界面的 Marmousi 反射系数模型 (箭头所指界面处的反射系数值被提高，其为所设置的强反射界面)；(b) 合成的无衰减地震记录；
+(c) 合成的衰减地震记录 (加 5% 的随机噪声)；(d) 当提供给非稳态反演如表 2 所示的等效 Q 值时，非稳态反演补偿后得到的地震数据深浅层振
+幅的相对误差，很显然当误差最小时，对应的 Q 值最优 (即等效 Q=52)；(e) 等效 Q=52 时非稳态稀疏反演反射系数 (与图 6a 所示真实反射系数
+相似度为 78.02%)；(f) 利用图 6e 所示的非稳态反演反射系数剖面和初始地震子波褶积重构的地震剖面；(g) 无衰减地震剖面 (图 6b)、衰减地震
+                                                      剖面 (图 6c) 和重构地震剖面 (图 6f) 振幅谱比较.
+              Fig. 6      Marmousi model (with strong reflectors in deep) and the related nonstationary inversion results
+(a) Marmousi reflectivity model where the strong reflectors are set by increasing the reflectivity value in the arrow-areas；(b) Synthetic attenuation-free seismic
+profile； (c) Synthetic attenuated seismic profile (with 5% random noise)； (d) The relative error between the shallow (0 ~ 100 ms) and deep (600 ~ 700 ms)
+amplitude of the restructured seismic data when providing a series of equivalent-Q models shown in Table 2 for the nonstationary sparse inversion proposed in
+this paper. Apparently, it indicates that, the relative error reaches the minimum that of the corresponding equivalent-Q is 52 and optimal；(e) The nonstationary
+sparse inverted reflectivity when the provided equivalent-Q is 52 (78.02% similarity to the true reflectivity in Fig. 6a)； (f) The reconstructed seismic profile
+which is convoluted by the nonstationary sparse inverted reflectivity in Fig. 6e and the initial seismic wavelet；(g) The amplitude spectrum comparison between
+             the attenuation-free seismic profile in Fig. 6b, the attenuated seismic profile in Fig. 6c and the reconstructed seismic profile in Fig. 6f.
+   2期                                              程亮等：基于非稳态稀疏反演的地震资料拓频处理                                                                                                                       709
+
+
+                           92    275   458 641     824 1007 1190 1373 1556                                  50
+                   0.0                                                                                                 (b)
+                          (a)
+                   0.1                                                                                      40
+
+
+
+
+                                                                                     The relative error/%
+                   0.2
+                                                                                                            30
+                   0.3
+             t/s
+
+
+
+
+                   0.4                                                                                      20
+
+                   0.5
+                                                                                                            10
+                   0.6
+
+                   0.7                                                                                       0
+                                                                                                                 124            86        80                64             63       61
+                                                                                                                                                    Q
+                   0.8
+                                                                                                       0.50                                              0.50
+                                                                                                                   (d)                                           (e)
+                           92    275   458 641     824 1007 1190 1373 1556                             0.52                                              0.52
+                   0.0
+                           (c)
+                   0.1                                                                                 0.54                                              0.54
+
+                   0.2                                                                                 0.56                                              0.56
+                   0.3
+                                                                                                       0.58
+                                                                                    t/s
+
+
+                                                                                                                                                         0.58
+
+
+
+
+                                                                                                                                                   t/s
+             t/s
+
+
+
+
+                   0.4
+                                                                                                       0.60                                              0.60
+                   0.5
+                                                                                                       0.62                                              0.62
+                   0.6
+
+                   0.7                                                                                 0.64                                              0.64
+
+                   0.8                                                                                 0.66                                              0.66
+                                                                                                                  -1            0         1                     -1        0         1
+                                                                                                                             Amplitude                                  Amplitude
+
+                                                                  图7    X 油田地震资料对比
+(a) 原始纯波地震数据；(b) 当提供给非稳态反演如表 3 所示的等效 Q 值时，非稳态反演补偿后得到的地震数据深浅层振幅的相对误差，很显
+然当误差最小时，对应的 Q 值最优 (即等效 Q=80)；(c) 非稳态高分辨率处理后的拓频地震数据 (等效 Q=80)；(d) A 井合成地震记录 (即黑色虚
+线：所用子波主频与原始地震数据 (图 7a) 频率相当) 与原始井旁地震道数据 (黑色实线) 的对比；(e) A 井合成地震记录 (即黑色虚线：所用子波
+                                       主频与拓频地震数据 (图 7c) 频率相当) 与拓频井旁地震道数据 (黑色实线) 的对比.
+                                                               Fig. 7   The X oilfield example
+(a) The original pure wave seismic data；(b) The relative error between the shallow (0 ~ 100 ms) and deep (700 ~ 800 ms) amplitude of the restructured seismic
+data when providing a series of equivalent-Q models shown in Table 3 for the nonstationary sparse inversion proposed in this paper. Apparently, it indicates
+that, the relative error reaches the minimum that of the corresponding equivalent-Q is 80 and optimal； (c) The seismic data after nonstationary high-resolution
+processing with the optimal equivalent-Q=80； (d) The synthetic seismic record (the black dashed curve) which is convoluted by the reflectivity extracted from
+A-well and a Ricker wavelet with equivalent main-frequency to that of the original seismic data in Fig. 7a. The black solid curve represents the original A-well-
+side seismic trace；(e) The synthetic seismic record (the black dashed curve) which is convoluted by the reflectivity extracted from A-well and a Ricker wavelet with
+equivalent main-frequency to that of the high-resolution seismic data in Fig. 7c. The black solid curve represents the high-resolution A-well-side seismic trace.
+
+                                       表3        不同时窗长度下谱比法估算的 Q 值 (均进行了四舍五入处理)
+     Table 3             The equivalent-Q estimated by spectral ratio method when provided different time-window lengths
+                                                  (all equivalent-Q values are rounded)
+     浅层数据时窗/ms                          0 ~ 30           0 ~ 50            0 ~ 70                                      0 ~ 90             0 ~ 110                      0 ~ 130           0 ~ 150
+     深层数据时窗/ms                         770 ~ 800       750 ~ 800         730 ~ 800                                710 ~ 800              690 ~ 800                   670 ~ 800       650 ~ 800
+    谱比法求取的等效Q                            124              86                 80                                          64                   63                         61                61
+
+
+(9.03%) 最小，通过式 (18) 优选，确定地层等效 Q 为                                                             料整体分辨率得到了提高 (如图 8b 所示原始地震数
+80， 并 将 Q=80 对 应 的 非 稳 态 反 演 重 构 数 据 作 为 最                                                    据和新方法处理后地震数据振幅谱对比)，高频得到
+终的高分辨率地震数据. 由于考虑了地震波传播过                                                                       拓展，同时反映构造特征的低频信息也未被破坏. 剖
+程中的 Q 衰减效应，利用等效 Q=80 重构的地震资                                                                   面上 (图 7c) 同相轴变细，反映出许多细小的地层结
+ 710                                                        地 球 物 理 学 报 （ Chinese J. Geophys.）                                                                             68 卷
+
+                                                                                                             120
+                                      (a)                                        0~100 ms                                 (b)         The original seismic data
+                             40                                                                                                       The high resolution seismic data
+                                                                                 700~800 ms                  100
+
+                             30                                                                                  80
+                 Amplitude
+
+
+
+
+                                                                                                     Amplitude
+                                                                                                                 60
+                             20
+                                                                                                                 40
+                             10
+                                                                                                                 20
+
+                              0                                                                                   0
+                                  0         20   40     60    80                       100     120                    0         20     40     60    80       100     120
+                                                   Frequency/Hz                                                                          Frequency/Hz
+
+                                                                           (c)                                             0~100 ms
+                                                                  40
+                                                                                                                           700~800 ms
+
+                                                                  30
+                                                      Amplitude
+
+
+
+
+                                                                  20
+
+
+                                                                  10
+
+
+                                                                   0
+                                                                       0          20         40     60    80                    100     120
+                                                                                               Frequency/Hz
+
+图8     (a) 原始纯波地震数据 (图 7a) 深浅层振幅谱；(b) 原始纯波地震数据 (图 7a) 和非稳态高分辨率处理后的地震数
+              据 (图 7c) 振幅谱对比；(c) 非稳态高分辨率处理后的地震数据 (图 7c) 深浅层振幅谱
+Fig. 8 (a) The amplitude spectra for the original shallow (0 ~ 100 ms) and deep (700 ~ 800 ms) seismic data in Fig. 7a；
+(b) The amplitude spectra for seismic data before and after nonstationary high-resolution processing； (c) The amplitude
+     spectra for shallow (0 ~ 100 ms) and deep (700 ~ 800 ms) seismic data after nonstationary high-resolution processing
+
+构特征，横向变化更加清晰，更有利于储层解释和                                                                                      3             结论与认识
+层位追踪.
+       为验证本文所提出的高分辨率处理方法的保                                                                                                在地层吸收衰减理论背景下，将 Q 补偿和稀疏
+幅性和可靠性，对比分析拓频前后地震数据的井震                                                                                      约束反射系数反演联合用于地震资料拓频处理. 从
+关系和频谱. 图 7d 为原始井旁道与 A 井合成地震记                                                                                衰减理论出发，提出 p 范数 (0<p<1) 稀疏约束法则下
+录 (所用子波主频与原始地震数据频率相当)，对比                                                                                    的非稳态反射系数反演方法. 该方法通过谱比法估
+可知，二者低频信息丰富，高频成分不足，难以刻画                                                                                     算 Q 值，考虑地层对地震波的吸收衰减作用，设计
+地层反射细节 (黑色箭头部位). 图 7e 所示的高分辨                                                                                非稳态反演框架同时消除地震子波的滤波效应和
+
+率井旁道与 A 井合成地震记录 (所用子波主频与重                                                                                   Q 的滤波效应，得到更真实的地层反射结构. 选择合
+                                                                                                            适地震子波重构高分辨率地震数据，并且进一步创
+构高分辨率地震数据频率相当)，分析可知，重构的
+                                                                                                            新提出利用非稳态反演补偿后的地震数据深浅层地
+高分辨率地震资料与井上的反射细节更为吻合 (黑
+                                                                                                            震能量相对误差，评估不同长度时窗下谱比法估算
+色 圆 圈 部 位 所 示 的 储 层 部 位 ). 由 于 高 频 成 分 的 增
+                                                                                                            Q 质量，优选最佳地层 Q 模型及对应的非稳态反演
+多，薄层地震反射信息更为丰富 (黑色箭头部位)，说
+                                                                                                            重构的地震资料. 模型和实际数据应用均取得良好
+明了本文提出的高分辨率处理方法是可靠的. 此外，
+                                                                                                            的效果，并得到以下结论与认识.
+通过分析地震数据振幅谱可知，新方法处理后的地
+                                                                                                                          (1) 地震波在地下实际介质中传播时，受到吸收
+震数据整体频带拓宽，纵向上深浅分辨率和振幅更
+                                                                                                            衰减作用，导致地震资料振幅、频率等发生衰减. 本
+为 一 致 (图 8c)， 这 也 佐 证 所 估 算 的 等 效 Q=80 的 合                                                                  文提出的非稳态高分辨率方法能有效补偿 Q 衰减
+理性. 而常规的高分辨率方法大多数只提高地震资                                                                                     效应所造成的地震能量和频率损失，改善地震资料
+料的整体分辨率，而并未能从本质上解决 Q 衰减导                                                                                    品质.
+致的地震深浅分辨率和振幅的不一致性问题. 因此，                                                                                                  (2) 由于考虑到地层的吸收衰减作用，本文提出
+新方法不仅提高了地震分辨率，更从地震波传播机                                                                                      的非稳态地震资料高分辨率处理策略不仅能有效提
+理角度增强了地震资料的保幅性.                                                                                             高地震数据整体分辨率，并且能够优选更合理的
+  2期                                          程亮等：基于非稳态稀疏反演的地震资料拓频处理                                                                                711
+
+
+Q 模型，使深浅层的分辨率和振幅更为一致. 但同时                                                      Cheng L, Kong Q F, Song J G. 2017. A step-by-step iteration for joint
+                                                                                   frequency expanding. Oil Geophysical Prospecting (in Chinese), 52(4):
+注意到，Q 补偿并不是绝对的，即深浅层的谱态并未
+                                                                                   696-703.
+能完全匹配.
+                                                                               Cheng L, Wang S X, Li S J, et al. 2020. Multi-trace nonstationary sparse
+      (3) 本文所提方法结合谱比法和非稳态反演，从                                                      inversion with structural constraints. Acta Geophysica, 68(3): 675-685.
+不同时窗下谱比法估算的 Q 模型中评估最优的补                                                        Cheng L, Yuan S Y, Wang S X. 2021. Joint reflectivity and structural
+偿结果和 Q 值，这种 Q 评估方法虽然更加符合地震                                                         interval-Q estimation by using nonstationary sparse inversion. IEEE
+
+波在地层中传播时的衰减机制，但并不能将影响                                                              Geoscience and Remote Sensing Letters, 18(5): 776-780.
+                                                                               Feng W, Hu T Y, Yao F C, et al. 2017. Time-varying seismic wavelet
+Q 估算精度的所有因素消除或者降低. 另外，当评
+                                                                                   estimation from nonstationary seismic data. Chinese Journal of
+估 Q 时，所选择的深浅层地震数据存在强反射层
+                                                                                   Geophysics (in Chinese), 60(1): 305-315, doi: 10.6038/cjg20170125.
+时，会使 Q 评估产生误差. 在实际地震资料处理过                                                      Futterman W I. 1962. Dispersive body waves. Journal of Geophysical
+程中，需要结合测井解释的地质信息，选取深浅层                                                             Research, 67(13): 5279-5291.
+
+数据时尽量避开强反射层，以免 Q 的估算和评估出                                                       Ji Y Z, Zhang Y Y, Zhu L H, et al. 2020. High-resolution seismic time-
+                                                                                   frequency analysis based on sparse Bayesian learning combined with
+现较大偏差.
+                                                                                   Wigner-Ville distribution. Geophysical Prospecting for Petroleum (in
+      拓频后的地震数据可以用于储层精细描述和
+                                                                                   Chinese), 59(1): 80-86.
+复杂构造的解释，但在研究过程中还有许多值得深                                                         Kazemeini S H, Fomel S, Juhlin C. 2008. Prestack spectral blueing: A tool
+挖的问题，如如何准确地估算一个合理的 Q 模型用                                                           for increasing seismic resolution. //SEG Technical Program Expanded
+于反演？非稳态反演过程中，稀疏约束项对噪声有                                                             Abstracts. SEG, 854-858.
+
+一定的压制作用，但 Q 补偿是无差别地，即有效信                                                       Kjartansson E. 1979. Constant Q-wave propagation and attenuation. Journal
+                                                                                   of Geophysical Research: Solid Earth, 84(B9): 4737-4748.
+号和噪声同时被放大，如何在补偿有效信号时进一
+                                                                               Ko H Y, Scott R F. 1967. Deconvolution techniques for linear systems.
+步压制噪声？利用非稳态反演反射系数进行地震数
+                                                                                   Bulletin of the Seismological Society of America, 57(6): 1393-1408.
+据重构时，如何根据需求选取合适的地震子波？如                                                         Lai M J, Wang J Y. 2011. An unconstrained lq minimization with 0<q≤1
+何利用衰减补偿后地震数据深浅层能量的一致性，                                                             for sparse solution of under-determined linear systems. SIAM Journal
+
+进一步消除更多的影响 Q 估算的因素？这些问题                                                            on Optimization, 21(1): 82-101.
+                                                                               Lari H H, Gholami A. 2019. Nonstationary blind deconvolution of seismic
+都有待于进一步研究.
+                                                                                   records. Geophysics, 84(1): V1-V9.
+                                                                               Li D, Castagna J, Goloshubin G. 2016. Investigation of generalized S-
+
+References                                                                         transform analysis windows for time-frequency analysis of seismic
+                                                                                   reflection data. Geophysics, 81(3): V235-V247.
+Aghamiry H S, Gholami A. 2018. Interval-Q estimation and compensation:         Li H. 2008. Research on joint widening the frequency band controlled by
+    An adaptive dictionary-learning approach. Geophysics, 83(4): V233-             spatial variation of matching factor in signal domain[Master’s thesis](in
+    V242.                                                                          Chinese). Qingdao: China University of Petroleum (East China).
+ Alsalmi H, Wang Y H. 2021. Mask filtering to the Wigner-Ville                 Li S J, Zhang B, Yong X S, et al. 2020. Seismic quality factor estimation
+    distribution. Geophysics, 86(6): V489-V496.                                    using prestack seismic gathers: A simulated annealing approach.
+Attia I, Ewida H, Aly S A. 2020. Using seismic spectral blueing for                Interpretation, 8(2): T441-T451.
+    enhancing seismic resolution: a case study from a mature field in a rift   Lu W K, Ding W L, Zhang S W, et al. 2005. A high-resolution processing
+    basin, southwestern Gulf of Suez, Egypt. First Break, 38(4): 31-39.            technique for 3-D seismic data based on signal sub-space
+Bickel S H, Natarajan R R. 1985. Plane-wave Q deconvolution. Geophysics,           decomposition. Chinese Journal of Geophysics (in Chinese), 48(4):
+    50(9): 1426-1439.                                                              896-901.
+Chai X T, Wang S X, Wei J X, et al. 2016. Reflectivity inversion for           Lupinacci W M, Oliveira S A M. 2015. Q factor estimation from the
+    attenuated seismic data: Physical modeling and field data experiments.         amplitude spectrum of the time-frequency transform of stacked
+    Geophysics, 81(1): T11-T24.                                                    reflection seismic data. Journal of Applied Geophysics, 114: 202-209.
+Chai X T, Wang S X, Tang G Y. 2017. Sparse reflectivity inversion for          Ma M, Wang S X, Yuan S Y, et al. 2018. Multichannel block sparse
+    nonstationary seismic data with surface-related multiples: Numerical           Bayesian learning reflectivity inversion with lp-norm criterion-based Q
+    and field-data experiments. Geophysics, 82(3): R199-R217.                      estimation. Journal of Applied Geophysics, 159: 434-445.
+Chen W C, Gao J H, Bao Q Z. 2009. Adaptive attenuation of ground roll via       Mansfield G. 1989. Interactive broadband constrained inversion.
+    continuous wavelet transform. Chinese Journal of Geophysics (in                Exploration Geophysics, 20(2): 253-255.
+    Chinese), 52(11): 2854-2861, doi: 10.3969/j.issn.0001-5733.2009.11.020.    Margrave G F, Lamoureux M P, Henley D C. 2011. Gabor deconvolution:
+ 712                                                  地 球 物 理 学 报 （ Chinese J. Geophys.）                                                      68 卷
+
+    estimating reflectivity by nonstationary deconvolution of seismic data.       Chinese). Qingdao: China University of Petroleum (East China).
+    Geophysics, 76(3): W15-W30.                                               Wu N K, Zhou H L, Wang Y J, et al. 2020. Multichannel synchrosqueezing
+Naghadeh D H, Morley C K. 2017. Enhancement of temporal resolution                generalized S-transform for time-frequency analysis of seismic traces.
+    using improved time-variant spectral whitening. Journal of Geophysics         Interpretation, 8(4): T793-T801.
+    and Engineering, 14(4): 822-832.                                          Yuan S Y, Wang S X, Ma M, et al. 2017. Sparse Bayesian learning-based
+Rong J Z, Liu F, Li F Y, et al. 2022. Application of seismic data spectrum        time-variant deconvolution. IEEE Transactions on Geoscience and
+
+    bluing technique in Shenhu sea area. Progress in Geophysics (in               Remote Sensing, 55(11): 6182-6194.
+
+    Chinese), 37(6): 2589-2595, doi: 10.6038/pg2022EE0207.                    Yuan S Y, Yu Z Z, Gao H Y, et al. 2019. Semi-blind time-variant sparse
+
+Song J G, Cheng L, Meng X J, et al. 2016. Well logging and well-side              deconvolution using a weighted L1 norm. //81st EAGE Conference and
+
+    seismic data matching based on step-by-step iterative method. Oil             Exhibition. European Association of Geoscientists & Engineers, 1-5.
+
+    Geophysical Prospecting (in Chinese), 51(1): 80-86.                       Zoukaneri I, Porsani M J. 2015. A combined Wigner-Ville and maximum
+
+Song J G, Li Z C, Wang Y G, et al. 2010. Joint frequency expanding method         entropy method for high-resolution time-frequency analysis of seismic
+
+    of crosswell seismic data and 3D seismic data. //SEG Technical                data. Geophysics, 80(6): O1-O11.
+
+    Program Expanded Abstracts. SEG, 1457-1461.                               Zuo W M, Meng D Y, Zhang L, et al. 2013. A generalized iterated
+
+Sui Y H, Ma J W. 2019. A nonstationary sparse spike deconvolution with            shrinkage algorithm for non-convex sparse coding. //2013 IEEE
+                                                                                  International Conference on Computer Vision. Sydney: IEEE, 217-224.
+    anelastic attenuation. Geophysics, 84(2): R221-R234.
+Tian G, Shi Z J, Dong S X, et al. 2005. Using uphole survey data to
+    compensate high-frequency components of seismic data. Oil Geophysical     附中文参考文献
+    Prospecting (in Chinese), 40(5): 546-549.
+                                                                              陈文超, 高静怀, 包乾宗. 2009. 基于连续小波变换的自适应面波压制方
+Tian G, Zhao Y. 2023. Improved generalized stable inverse Q filtering
+                                                                                 法. 地球物理学报, 52(11): 2854-2861, doi: 10.3969/j.issn.0001-5733.
+    method. Progress in Geophysics (in Chinese), 38(1): 285-297, doi: 10.
+                                                                                 2009.11.020.
+    6038/pg2023GG0154.
+                                                                              程亮, 孔庆丰, 宋建国. 2017. 步进迭代法井地联合地震资料拓频处理. 石
+van der Baan M. 2012. Bandwidth enhancement: Inverse Q filtering or time-
+                                                                                 油地球物理勘探, 52(4): 696-703.
+    varying Wiener deconvolution?. Geophysics, 77(4): V133-V142.
+                                                                              冯玮, 胡天跃, 姚逢昌等. 2017. 非稳态地震记录时变子波估计. 地球物理
+Walden A T. 1985. Non-Gaussian reflectivity, entropy, and deconvolution.
+                                                                                 学报, 60(1): 305-315, doi: 10.6038/cjg20170125.
+    Geophysics, 50(12): 2862-2888.
+                                                                              纪永祯, 张渝悦, 朱立华等. 2020. 基于 SBL-WVD 的地震高分辨率时频
+Wang B F, Chen X H, Li J Y, et al. 2014. A stable and efficient attenuation
+                                                                                 分析. 石油物探, 59(1): 80-86.
+    compensation method based on inversion. Chinese Journal of
+                                                                              李辉. 2008. 空变匹配因子控制下的信号域联合拓频方法研究 [ 硕士论
+    Geophysics (in Chinese), 57(4): 1265-1274, doi: 10.6038/cjg20140423.
+                                                                                 文 ]. 青岛: 中国石油大学 (华东).
+Wang L L, Gao J H, Zhao W, et al. 2013. Enhancing resolution of
+                                                                              陆文凯, 丁文龙, 张善文等. 2005. 基于信号子空间分解的三维地震资料
+    nonstationary seismic data by molecular-Gabor transform. Geophysics,         高分辨率处理方法. 地球物理学报, 48(4): 896-901.
+    78(1): V31-V41.                                                           荣骏召, 刘坊, 李福元等. 2022. 地震数据谱蓝化技术在神狐海域水合物
+Wang P, Li J Y, Chen X H, et al. 2019. Fluid discrimination based on             工 区 的 应 用 . 地 球 物 理 学 进 展 , 37(6): 2589-2595, doi: 10.6038/
+    frequency-dependent AVO inversion with the elastic parameter                 pg2022EE0207.
+    sensitivity analysis. Geofluids, 2019: 8750127.                           宋建国, 程亮, 孟宪军等. 2016. 步进迭代法测井与井旁地震资料匹配处
+Wang P, Li J Y, Chen X H, et al. 2021. Extending the inclusion-based             理. 石油地球物理勘探, 51(1): 80-86.
+    effective medium model with fluid pressures caused by wave-induced        田钢, 石战结, 董世学等. 2005. 利用微测井资料补偿地震数据的高频成
+    flow. International Journal of Rock Mechanics and Mining Sciences,           分. 石油地球物理勘探, 40(5): 546-549.
+    145: 104849.                                                              田广, 赵岩. 2023. 一种改进的广义稳定反 Q 滤波方法. 地球物理学进展,
+Wang Y H. 2002. A stable and efficient approach of inverse Q filtering.          38(1): 285-297, doi: 10.6038/pg2023GG0154.
+    Geophysics, 67(2): 657-663.                                               王本锋, 陈小宏, 李景叶等. 2014. 基于反演的稳定高效衰减补偿方法. 地
+Wang Y H. 2006. Inverse Q-filter for seismic resolution enhancement.             球物理学报, 57(4): 1265-1274, doi: 10.6038/cjg20140423.
+    Geophysics, 71(3): V51-V60.                                               吴琳. 2011. 品质因子求取与补偿方法研究 [ 硕士论文 ]. 青岛: 中国石油
+Wu L. 2011. The study on methods of quality factor extraction and                大学 (华东).
+    compensation for the attenuation based on it [Master’s thesis] (in                                                         （本文编辑          张正峰）
+

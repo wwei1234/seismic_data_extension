@@ -1,0 +1,1440 @@
+RESEARCH ARTICLE                            A Self‐Supervised Learning Framework for Seismic Low‐
+10.1029/2024JH000157
+                                            Frequency Extrapolation
+Key Points:                                 Shijun Cheng1      , Yi Wang2,3, Qingchen Zhang3          , Randy Harsuko1, and Tariq Alkhalifah1
+• We develop a self‐supervised seismic
+  low‐frequency extrapolation algorithm     1
+                                             Division of Physical Science and Engineering, King Abdullah University of Science and Technology, Thuwal, Saudi
+  that can be applied to exploration and
+                                            Arabia, 2Shandong Key Laboratory of Mining Disaster Prevention and Control, Shandong University of Science and
+  earthquake seismograms
+• The predicted low‐frequencies can help    Technology, Qingdao, China, 3Research Center for Computational and Exploration Geophysics, State Key Laboratory of
+  fill in the model the wavenumber          Geodesy and Earth's Dynamics, Innovation Academy for Precision Measurement Science and Technology, Chinese
+  spectrum and help avoid cycle‐            Academy of Sciences, Wuhan, China
+  skipping in full waveform inversion
+• Our method, by integrating a self‐
+  supervised denoiser, is robust against
+  noisy observed data
+                                            Abstract Full waveform inversion (FWI) is capable of generating high‐resolution subsurface parameter
+                                            models, but it is susceptible to cycle‐skipping when the data lack low‐frequency components. Unfortunately,
+                                            such components (<5.0 Hz) are often tainted by noise in real seismic exploration, which hinders the application
+Correspondence to:                          of FWI. To address this issue, we develop a novel self‐supervised low‐frequency extrapolation method that does
+Q. Zhang,
+qczh@whigg.ac.cn
+                                            not require labeled data, enabling neural networks to be trained directly on real data. In the proposed approach,
+                                            the neural network training is divided into two stages: warm‐up and iterative data refinement (IDR). In the IDR
+                                            stage, the pseudo‐labels for the current epoch are derived from the predictions made by the network trained in
+Citation:
+                                            the previous epoch on the original observed data. The IDR stage gradually narrows the gap between the
+Cheng, S., Wang, Y., Zhang, Q., Harsuko,
+R., & Alkhalifah, T. (2024). A self‐        predicted pseudo‐label and the ideal ground truth, thereby enhancing the network's low‐frequency extrapolation
+supervised learning framework for seismic   performance. This paradigm effectively addresses the significant generalization gap often encountered using
+low‐frequency extrapolation. Journal of
+                                            supervised learning techniques, which are typically trained on synthetic data. We validate the effectiveness of
+Geophysical Research: Machine Learning
+and Computation, 1, e2024JH000157.          our method on both synthetic and field data. The results demonstrate that our method effectively extrapolates
+https://doi.org/10.1029/2024JH000157        low‐frequency components, aiding in circumventing the challenges of cycle‐skipping in FWI. Meanwhile, by
+                                            integrating a self‐supervised denoiser, our method effectively and simultaneously performs denoising and low‐
+Received 31 JAN 2024
+Accepted 13 JUN 2024
+                                            frequency extrapolation on noisy data. Furthermore, we showcase the potential application of our method in
+                                            extending the ultralow frequency components of the large‐scale collected earthquake seismogram.
+Author Contributions:
+Conceptualization: Shijun Cheng             Plain Language Summary Full waveform inversion (FWI) is a method used to provide detailed
+Investigation: Yi Wang, Qingchen Zhang,     underground images for efforts in oil exploration or studying earthquakes. However, the method is prone to a
+Randy Harsuko
+Methodology: Shijun Cheng
+                                            problem known as “cycle‐skipping,” caused by the lack of low frequencies in the data, and as a result, the
+Supervision: Tariq Alkhalifah               inversion converges to an inaccurate velocity model. We propose a new way to extrapolate the low‐frequency
+Validation: Qingchen Zhang                  components using a neural network‐based self‐supervised approach. This means our method learns directly
+Writing – original draft: Shijun Cheng
+Writing – review & editing: Yi Wang,
+                                            from real data rather than relying on artificially created data, which is a common limitation in the supervised
+Qingchen Zhang, Randy Harsuko,              paradigm. Our method not only helps to overcome the issue of skipping cycles but also demonstrates robustness
+Tariq Alkhalifah                            against noisy data, enhancing its practical application potential. The tests on exploration data validate its ability
+                                            to predict the low‐frequency components, helping to avoid local minima and thus improving the accuracy of
+                                            FWI. Also, we demonstrate how our method can be applied to invert earthquake data, where it can extend the
+                                            ultralow frequency information. This research could contribute to providing a better and a more reliable way to
+                                            obtain images of the Earth's interior.
+
+
+                                            1. Introduction
+                                            Full waveform inversion (FWI) can provide a high‐resolution subsurface parameter model by minimizing the
+© 2024 The Author(s). Journal of            misfit between observed and modeled seismic waveforms. This approach has drawn a lot of attention (Anderson
+Geophysical Research: Machine Learning      et al., 2012; Ben‐Hadj‐Ali et al., 2011; Choi & Alkhalifah, 2012; Guo & Alkhalifah, 2017; Q. Zhang et al., 2014,
+and Computation published by Wiley
+Periodicals LLC on behalf of American       2016, 2018) since it was proposed by Tarantola (1984, 1986). However, one common problem for FWI is the high
+Geophysical Union.                          nonlinearity of the problem, resulting in many local minima in its objective function, which can prevent the
+This is an open access article under the    algorithm from converging to the global minimum. To address this problem, various strategies and algorithms
+terms of the Creative Commons
+Attribution License, which permits use,     have been developed to help eliminate or escape local minima in FWI.
+distribution and reproduction in any
+medium, provided the original work is       Bunks et al. (1995) introduced a multiscale strategy that initiates the process with the lowest frequencies available
+properly cited.                             in the data and then progressively adds higher frequencies to the inversion. This method, applied widely, attempts
+
+
+CHENG ET AL.                                                                                                                                               1 of 32
+                                                                                                                                         29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+               JGR: Machine Learning and Computation                                                  10.1029/2024JH000157
+
+
+                 to help FWI avoid local minima. It accomplishes this goal by smoothing the objective function in the early stages
+                 and subsequently allows higher resolution information as the inversion advances. Following this work, Boo-
+                 nyasiriwat et al. (2009) provided an optimal multiscale frequency selection algorithm to achieve computational
+                 efficiency in the time domain. Besides, Gao et al. (2019) and Z. Ren and Liu (2015) also attempted to refine the
+                 multiscale algorithm to improve the inversion quality of FWI. Nevertheless, these methods do not address the
+                 issue of the lack of low frequencies in the data.
+                 In order to build the long‐wavelength components of the subsurface parameter model in the case of lacking low
+                 frequencies, Ha and Shin (2012) and Kim et al. (2013) proposed the Laplace‐domain waveform inversion.
+                 However, this method has the drawback that the artificial low frequencies it generates due to the Laplace damping
+                 applies mainly to the early arrivals. Hence, numerous studies were aimed to adjust the norm of the misfit function
+                 to minimize the occurrence of local minima. Ma and Hale (2013) utilized the dynamic warping algorithm,
+                 mitigating FWI's reliance on an accurate initial model by estimating the travel time shift between observed and
+                 synthetic data. Pointed out by Luo and Wu (2015) and R.‐S. Wu et al. (2014), the seismic data's envelope
+                 potentially provides ultralow frequency representation of the signals, offering an avenue to estimate long‐
+                 wavelength velocity structures even in the absence of low‐frequency information. Furthermore, Warner and
+                 Guasch (2016) introduced the adaptive waveform inversion (AWI) to counter the cycle‐skipping problem. This
+                 method employs a convolutional filter as a measure of matching between the predicted data and observed data. Y.
+                 Yang and Engquist (2018) and Y. Yang et al. (2018) explored the optimal transport approach, measuring
+                 amplitude differences and global phase shifts and offering a solution to circumvent cycle‐skipping issues. B. Sun
+                 and Alkhalifah (2019) showed that AWI is part of a more general framework based on matching filters and
+                 optimal transport. Leveraging well logging data, Q. Li et al. (2022) devised a structure‐guided interpolation
+                 algorithm to construct the background velocity model for FWI. J. Yao and Wang (2022) crafted a full‐waveform
+                 inversion starting model from wells, employing dynamic time warping and convolutional neural networks
+                 (CNNs). Another prominent technique for velocity model construction is the reflection waveform inversion
+                 (RWI) (Xu et al., 2012), requiring migration and demigration to update the wavepath. RWI typically incorporates
+                 a correlation‐type objective function to address amplitude challenges encountered without true amplitude
+                 (Alkhalifah & Wu, 2016; Chi et al., 2015; Guo & Alkhalifah, 2017; G. Wang et al., 2018; Z. Wu & Alkhali-
+                 fah, 2017; G. Yao et al., 2020; Z.‐D. Zhang & Alkhalifah, 2019). However, RWI demands significantly higher
+                 computational resources compared to conventional FWI methods.
+                 Recently, machine learning has demonstrated significant potential in the field of seismic processing due to its
+                 ability to approximate any nonlinear function (Cheng, Shi, et al., 2023; Cheng et al., 2024; Harsuko & Alkha-
+                 lifah, 2022; Mousavi & Beroza, 2022; X. Wu et al., 2019; Yu et al., 2019), which also showed a potential in
+                 velocity model building. As a result, some researchers have proposed replacing traditional physics‐based FWI
+                 with CNNs to directly learn a mapping from seismic data to velocity models in a data‐driven manner (Araya‐Polo
+                 et al., 2018; Du et al., 2022; S. Li et al., 2020). These trained CNN models can then be applied directly to unseen
+                 test data to predict velocity models. Typically, the training of such CNNs requires a large data set and is conducted
+                 in a supervised learning manner. For example, F. Yang and Ma (2019) employed the classic U‐Net network
+                 architecture as a baseline, trained it on a self‐constructed data set, and then tested it on 2D‐simulated models and
+                 the SEG salt model, demonstrating its potential in constructing velocity models. Y. Wu and Lin (2019) integrated
+                 a CNN with a conditional random field to form a hybrid network model, aiming to enhance the network's ability to
+                 refine the velocity fields near faults and boundaries. W. Zhang and Gao (2021) suggested the use of images in the
+                 common‐shot domain, replacing shot gathers, and then established an iterative deep CNN to produce high‐
+                 resolution velocity models. S. Yang et al. (2023) also utilized low‐resolution velocity models, images, and
+                 well velocity constraints to reconstruct high‐resolution velocity models. While these data‐driven approaches offer
+                 a new direction for seismic inversion, they often encounter challenges in generalization due to the complexity of
+                 real subsurface structures and property distributions. Moreover, the constructed training data sets often fail to
+                 cover real underground features. To address the lack of physical interpretability of purely data‐driven approaches,
+                 some researchers have proposed integrating a forward simulator based on the wave equation into the neural
+                 network (NN)‐based seismic inversion (P. Jin et al., 2021; Lin et al., 2023; Y. Ren et al., 2021). This simulator is
+                 employed to forward model the subsurface properties predicted by the NN. The discrepancy between the resulting
+                 seismic records and the original observations is then used as a misfit to update the network. This approach not
+                 only eliminates the need for labeled data but also enhances generalization to some extent. However, these
+                 methods have not yet achieved satisfactory results on field data and often face challenges, such as unclear
+
+
+
+CHENG ET AL.                                                                                                                  2 of 32
+                                                                                                                                           29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+               JGR: Machine Learning and Computation                                                    10.1029/2024JH000157
+
+
+                 inversion boundaries and overly blurred background velocities in situations when low‐frequencies are absent (F.
+                 Yang & Ma, 2019).
+
+                 Instead of using NNs to approximate an inversion operator, we can leverage them for low‐frequency extrapolation
+                 and thus extend the low‐frequency information of observed data. Compared to the daunting task of directly
+                 approximating the inversion operator with NNs, using them to learn low‐frequency extension might be more
+                 realistic. Some researchers have initiated preliminary investigations along these lines and applied this concept
+                 within FWI. Ovcharenko et al. (2017) were among the first to suggest using a feed‐forward artificial neural
+                 network (ANN) to approximate the nonlinear relationship between frequency‐wavenumber spectra with limited
+                 bandwidth and the low‐frequency data and, thus, recovering low‐frequency information. To tackle the inherent
+                 challenge of ANNs, wherein the number of trainable parameters surges with increasing input data, Ovcharenko
+                 et al. (2019) further transitioned from ANNs to CNNs and applied it for low‐frequency extrapolation in multi‐
+                 offset seismic data. Instead of working in the frequency‐wavenumber domain, H. Sun and Demanet (2018,
+                 2020) proposed using a CNN to directly reconstruct low‐frequency components trace‐by‐trace from band‐limited
+                 data in the time domain. Furthermore, H. Sun and Demanet (2021) extended their proposed framework to the low‐
+                 frequency extrapolation of multicomponent elastic wave data. Hu et al. (2021) and Y. Jin et al. (2021) developed
+                 progressive transfer learning algorithms, which embed a physics‐based FWI module to iteratively update the
+                 training data set, thereby reducing the feature discrepancy between the training data set and the test data set. These
+                 studies have provided validation of the feasibility of using NNs for seismic data's low‐frequency extrapolation.
+                 However, they only tested on synthetic data and rarely showcased applications on field data. Thus, the perfor-
+                 mance on field data is our ultimate goal.
+                 Achieving good low‐frequency extension results on field data using data‐driven methods remains a challenge.
+                 Consequently, relatively little attention has been devoted to enhancing the performance of NNs in low‐frequency
+                 extrapolation on field data. Fabien‐Ouellet (2020) utilized recurrent CNN to simultaneously achieve seismic
+                 denoising and low‐frequency generation, validating the method's performance on both synthetic and field data.
+                 Additionally, Nakayama and Blacquière (2021) developed a multitask seismic processing framework based on
+                 NNs, capable of concurrently suppressing the blending noise, interpolating missing traces, and recovering low‐
+                 frequency information. Fang et al. (2020) employed a CNN architecture based on convolutional autoencoders to
+                 learn the relationship between low‐frequency and high‐frequency data, thereby predicting low‐frequency com-
+                 ponents from high‐frequency data. They showcased the effectiveness of low‐frequency recovery in land field data
+                 and conducted a comparative analysis between FWI and reverse time migration (RTM) products using both the
+                 original data set and the data set enhanced with NN‐predicted low‐frequency components. In a similar vein, Z.
+                 Wang et al. (2022) applied a dense CNN methodology to broaden the low‐frequency spectrum of prestack vis-
+                 coacoustic seismic data, yielding promising outcomes when tested on marine field data. Ovcharenko et al. (2022)
+                 developed a multitask processing framework, which not only recovers low‐frequency information but also pro-
+                 vides a smooth subsurface background model. This was applied to marine data involving the elastic assumption.
+                 Although these methods have demonstrated a certain ability in recovering low frequencies on field data, their
+                 performance significantly lags behind their results on synthetic data. This discrepancy is attributed to their reliance
+                 on a supervised learning approach where training occurs solely on synthetic data before being directly applied to
+                 field data. It is evident that field and synthetic data have considerable feature differences due to physical ap-
+                 proximations made during synthetic data generation. Consequently, the features captured by the NN on synthetic
+                 data do not generalize well when applied to field data. To bridge the feature gap between the synthetic and field data,
+                 Alkhalifah et al. (2022) introduced a domain adaptation method, namely MLReal, which embeds real features of
+                 field data into synthetic data to enhance low‐frequency extrapolation performance on field data. However, this
+                 preprocessing‐based approach does not address the potential shift in labels between the synthetic and field data.
+                 Therefore, a more viable alternative is to train directly on field data. It allows the network to extract frequency
+                 features from field data more directly and thus, contributes to low‐frequency tasks on field data.
+                 Indeed, predicting low‐frequency data using unsupervised learning poses significant challenges. To our
+                 knowledge, we have only come across two studies addressing this issue. One study by H. Sun et al. (2023)
+                 developed a semi‐supervised learning approach by incorporating a domain adaptation approach. They trained a
+                 generative model, CycleGAN, using synthetic low‐frequency shot gathers and paired field band‐limited shot
+                 gathers. The trained CycleGAN demonstrated its capability to extrapolate low‐frequency components during
+                 testing on field data. However, during its training phase, CycleGAN still captures features inherent to the syn-
+                 thetic data, which might pose generalization issues when predicting field data. For instance, field data may exhibit
+
+
+CHENG ET AL.                                                                                                                    3 of 32
+                                                                                                                                        29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+               JGR: Machine Learning and Computation                                                  10.1029/2024JH000157
+
+
+                 anisotropic effects, but synthetic data simulated under the isotropic assumption may not accurately represent the
+                 field data. In addition, training CycleGANs is not trivial. Since it requires simultaneous training of both
+                 discriminator and generator models, it relies on expert tuning and hyperparameter selection. Another approach
+                 was proposed by M. Wang et al. (2020), employing a self‐supervised learning (SSL) method for low‐frequency
+                 extension of seismic data. They first trained an NN using paired seismic data sets missing the low‐frequency
+                 components. These paired data sets share the same high‐frequency cutoff but differ in their low‐frequency
+                 components. The data set with the relative low‐frequency component, sourced from original data, serves as la-
+                 bels. In contrast, the data devoid of the relative low‐frequency components, achieved by filtering out the low‐
+                 frequency part from the original data, acts as the NN's input. Subsequently, they employed the trained
+                 network to generate low‐frequency components. However, since the training data for this method only extracts
+                 labels from the original data missing low frequencies, its performance in low‐frequency reconstruction relies on
+                 the low‐frequency range of the original seismic data. Moreover, downsampling significantly reduces the time
+                 sampling length of the seismic data, leading to a loss of high‐frequency information and a consequent decline in
+                 time resolution.
+                 In line with the work by M. Wang et al. (2020), our study introduces a Lesslow2Low (L2L) framework. This
+                 approach involves applying a high‐pass filter to the initial observed seismic data, which already lack low‐
+                 frequency components, thereby creating input data with even fewer low‐frequency contents. The original
+                 observed data serve as pseudo‐labels. In fact, the initial inspiration for L2L came from the classic denoising
+                 algorithm Noisier2Noise (Moran et al., 2020), which adds noise to the original noisy data to create data with
+                 stronger noise. This noisier data is considered as input, while the original noisy data acts as pseudo‐labels,
+                 allowing the network to be trained in an SSL fashion. The subtle distinction between the L2L framework and the
+                 method of M. Wang et al. (2020) lies in our ability to apply high‐pass filters with varying cutoff frequencies
+                 during the epoch progression as opposed to a fixed approach. However, the L2L framework also faces similar
+                 problems: the network's low‐frequency extrapolation performance is limited by the low‐frequency range of the
+                 original observed data. We present an example that substantiates this point and leads to two important findings:
+                 (a) The reason for the L2L framework's limited performance, compared to the supervised learning method, is the
+                 frequency information bias between the training set employed in L2L and that used in the supervised learning
+                 method. (b) The NN, which is trained using the L2L framework, demonstrates a certain degree of low‐frequency
+                 extension capability with the original observed data. Although this capability is limited, if we can iteratively
+                 refine the frequency information bias between the original observed data and the ideal ground truth, we can
+                 gradually approach the low‐frequency extrapolation performance of the supervised learning method.
+
+                 Motivated by these findings, we develop an effective SSL low‐frequency extrapolation algorithm and apply it to
+                 FWI. In our approach, the NN training is divided into two stages: warm‐up and iterative data refinement (IDR).
+                 The difference between these stages lies in the training sets used. During the warm‐up stage, the original observed
+                 data act as the pseudo‐labels, and the input data are generated by applying a high‐pass filter to the observed data.
+                 In the IDR stage, the pseudo‐labels for the current epoch are derived from the predictions made by the network
+                 trained in the previous epoch on the original observed data, and the input data are obtained by high‐pass filtering
+                 these predicted pseudo‐labels. The warm‐up stage, which precedes the IDR stage, aids in stabilizing the network
+                 and initially capturing data characteristics, thus providing some degree of low‐frequency extrapolation capability.
+                 The IDR stage gradually narrows the gap between the predicted pseudo‐label and the ideal ground truth, thereby
+                 enhancing the network's low‐frequency extrapolation performance. We first conduct tests on synthetic data to
+                 validate the effectiveness of our method and the ability to avoid cycle‐skipping local minima. Subsequently, we
+                 explore the application potential of our method in exploration field data to improve the accuracy of FWI. Lastly,
+                 we implement our algorithm on extensive earthquake seismogram data to conduct low‐frequency extrapolation
+                 testing, assessing its capability to extend the spectrum to extremely low‐frequency components.
+
+
+                 2. Method
+                 2.1. FWI
+                 FWI utilizes the whole waveform information (amplitude and travel time) of seismic data, and thus, it can
+                 construct a high‐resolution subsurface model by iteratively minimizing the misfit between observed and simu-
+                 lated data, which is superior to the high‐frequency approximated travel‐time tomography algorithms (Fichtner
+                 et al., 2013). The conventional misfit objective function is given by the l2 norm as follows:
+
+
+CHENG ET AL.                                                                                                                 4 of 32
+                                                                                                                                                29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+               JGR: Machine Learning and Computation                                                               10.1029/2024JH000157
+
+
+
+                                                               1⃦                               ⃦2
+                                                         χ(m) = ⃦dobs (xr ,xs ) − dsyn (xr ,xs )⃦2 ,                                      (1)
+                                                               2
+                 where the superscripts obs and syn denote the observed and simulated seismic data, respectively, xr and xs
+                 represent the coordinates of the receivers and sources, respectively. FWI attempts to find a medium capable of
+                 generating simulated data that closely align with the observed ones. Since FWI is a waveform matching process,
+                 there would be mismatching problems between the simulated and observed seismograms when the initial model is
+                 poor, leading to a time delay greater than T/2 (where T is the period of a wavelength), that is, the so‐called cycle‐
+                 skipping problem. The poor initial model often leads FWI to local minima.
+
+                 In order to overcome this problem, researchers have proposed many of the aforementioned algorithms, mostly by
+                 modifying the misfit function norm (Ma & Hale, 2013; Warner & Guasch, 2016; R.‐S. Wu et al., 2014; Y. Yang &
+                 Engquist, 2018; Yong et al., 2023). Actually, the root cause of the cycle‐skipping problem is the velocity model
+                 lacking the long‐wavelength components, which are often constructed with the low‐frequency data information
+                 (Virieux & Operto, 2009). If we cannot incorporate the low‐frequency content into the inversion process, the
+                 algorithm converges to a solution that merely fits the available high‐frequency data without accurately repre-
+                 senting the true subsurface structure (i.e., falling into local minimums). To address this challenge and to ensure the
+                 inversion produces reliable results, it is imperative to incorporate comprehensive low‐frequency information into
+                 the inversion process. Unfortunately, in real seismic exploration, data with frequencies below 5 Hz are usually
+                 contaminated with noise, thus rendering unusable low‐frequency data. Unlike the aforementioned methods, we
+                 try to predict the low‐frequency data information for the observed data using an innovative machine learning
+                 algorithm.
+
+                 To enhance our focus on the phase information and to avoid the amplitude challenge, we adopt a convolution‐
+                 based misfit function (Choi & Alkhalifah, 2011), which has a similar performance to the correlative norm in RWI.
+
+                                              1⃦                                                                     ⃦2
+                                        χ(m) = ⃦dobs (xr ,xs ) ∗ dsyn (xref ,xs ) − dsyn (xr ,xs ) ∗ dobs (xref ,xs )⃦2 ,                 (2)
+                                              2
+
+                 where the subscript ref denotes a reference trace, which is selected from the near‐offset traces with a high signal‐
+                 to‐noise ratio. Moreover, to improve the robustness against background noise, we further introduce a hybrid‐norm
+                 objective function into Equation 2 (Q. Zhang et al., 2016):
+
+                                                                     √̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅
+                                                                              ⃦                       ⃦
+                                                                              ⃦△d̂(xr ,xs )⃦2
+                                                        χhybrid (m) = 1 +                                   − 1,                          (3)
+                                                                                          ϵ2
+
+                                        obs             syn              obs         syn
+                 where △d̂(xr ,xs ) = d̂ (xr ,xs ) − d̂ (xr ,xs ) , d̂ and d̂ represent the first and second convolution terms in
+                 Equation 2. As for the damping coefficient, we follow the criterion as follows (Q. Zhang et al., 2016)
+
+                                                                                   ⃒ obs ⃒
+                                                                     ϵ = c ⋅ mean( ⃒d̂ ⃒),                                                (4)
+
+                 where c is a constant ranging between 0.1 and 100.0. The smaller c is the greater the added gain to the weak signal,
+                 which helps enhance the robustness of FWI to noise.
+
+
+                 2.2. Supervised Low‐Frequency Extrapolation
+                 When seismic waves travel through the Earth's interior, the stratigraphic filtering effect restricts the frequency
+                 content of the observed data. Meanwhile, due to limitations in the acquisition system, the recorded data not only
+                 suffer from contamination by environmental noise but also include system noise from the sensors themselves,
+                 which mainly affects the low frequencies. Therefore, the recorded seismic data can be expressed as follows:
+
+                                                                      dobs = H[dreal ] + n,                                               (5)
+
+                 where dobs represents the observed data with an absence of low‐frequency components, H[·] symbolizes the high‐
+                 pass filter effect on the seismic waves, dreal denotes the broad band ground‐truth data, and n represents the noise.
+
+
+CHENG ET AL.                                                                                                                       5 of 32
+                                                                                                                                           29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+               JGR: Machine Learning and Computation                                                    10.1029/2024JH000157
+
+
+                 The feasibility of an NN‐based data‐driven approach for low‐frequency extrapolation has been validated
+                 (Ovcharenko et al., 2019; H. Sun & Demanet, 2020). Generally, we can employ the supervised learning technique
+                 to train an NN that provides nonlinear mapping. This mapping translates data restricted in frequency bandwidth,
+                 particularly lacking in low‐frequency components, to a data set that encompasses the low‐frequency components.
+                 We can represent this operation as follows:
+
+                                                                  dreal = NN( dobs ,θ),                                             (6)
+
+                 where θ is the learnable parameter of network NN. Due to the unavailability of labels in field data, a synthetic data
+                 set is typically constructed to facilitate the training of the NN.
+
+                 2.3. LessLow2Low
+                 Compared to training on synthetic data, direct training on real data can significantly enhance the generalizability
+                 of NNs, thereby yielding superior low‐frequency extrapolation on field data. However, real data typically lacks
+                 low‐frequency information, which raises the question: how can we conduct effective training under these con-
+                 straints? Inspired by a denoising method from the machine learning community, known as Noisier2Noise (Moran
+                 et al., 2020), we can devise a strategy, called LessLow2Low (L2L), that facilitates training directly on real data.
+                 Within the Noisier2Noise framework, we are equipped solely with the original noisy data, which serve as a
+                 pseudo‐label. The input data are generated by introducing additional noise to the already noisy original data. By
+                 constructing a noisier‐noisy data set in this manner, we can provide a substrate for training the NN. Analogously,
+                 we, in our L2L framework, assume that we only have a waveform data set that lacks low‐frequency components in
+                 which such data can be treated as pseudo‐label data. Subsequently, a high‐pass filter is applied to this pseudo‐label
+                 data to obtain the input for the NN. In this context, the high‐pass filtered data, relative to the original waveform
+                 data, possess less low‐frequency components, thereby enabling the establishment of an SSL regime on real data.
+                 Nevertheless, considering the higher nonlinearity in the relation between low‐ and high‐frequency data, this
+                 paradigm often provides limited capabilities for low‐frequency extrapolation. In the following, we will present an
+                 example to illustrate this point.
+
+                 We simulate synthetic data for the Marmousi2 model with a dominant frequency of 15 Hz, followed by the
+                 preparation of three distinct training data sets. These data sets share the same input data, derived by subjecting the
+                 simulated synthetic data to a high‐pass filter with a cutoff of 10 Hz. However, the label data for each set are
+                 unique. For the first data set, the label data come from the original synthetic data set, designated as low full. The
+                 second data set's label data are obtained by applying a high‐pass filter with a cutoff frequency at 5 Hz to the
+                 original synthetic data identified as lesslow‐low 1. The third data set's label data are filtered to remove frequencies
+                 below 7 Hz from the original synthetic data, termed as lesslow‐low 2. The first data set serves as the foundation
+                 for the supervised learning of the NN. The rationale behind constructing the latter two data sets is to consider the
+                 reality that real data often lacking low‐frequency components. We train NNs using these three data sets, all under
+                 the same training configuration as elucidated in subsequent sections.
+                 We employ a test data set, from which frequencies below 10 Hz have been filtered out, to assess the low‐
+                 frequency extrapolation capabilities of networks trained on three distinct training sets. We extract a single
+                 trace from their prediction results for the test data and plot the corresponding amplitude spectra (see Figure 1a),
+                 comparing them with the test data and their associated labels. We observe that the network trained on the low‐full
+                 data set achieves superior low‐frequency extrapolation, which is definitively attributed to the network being
+                 trained in a supervised learning fashion. In contrast, the NNs trained on the two lesslow‐low data sets exhibit
+                 somewhat diminished performance. This substantiates the preceding contention that a training paradigm which
+                 uses data lacking low‐frequency components as labels can only furnish a limited capacity for low‐frequency
+                 extrapolation. For example, the label data in the lesslow‐low 1 data set are devoid of frequency components
+                 below 5 Hz. Therefore, they do not include information in their prediction distribution for frequencies below 5 Hz
+                 contained the test data. An additional finding is that the network, trained on lesslow‐low 1, exhibits better low‐
+                 frequency extrapolation performance than the network trained on lesslow‐low 2. This can be attributed to the fact
+                 that the lesslow‐low 1 data set has a lower frequency information bias relative to the lesslow‐low 2 data set when
+                 compared with the low‐full data set.
+
+                 An additional test involving using the network trained on the lesslow‐low 2 data set to predict the corresponding
+                 pseudo‐label data, which lack below 7 Hz frequencies. The single‐trace amplitude spectrum from the prediction is
+
+
+CHENG ET AL.                                                                                                                    6 of 32
+                                                                                                                                                                           29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                    JGR: Machine Learning and Computation                                                             10.1029/2024JH000157
+
+
+
+
+Figure 1. (a) Comparison of amplitude spectrum curves from the prediction results of networks trained on different data sets. (b) The prediction results of the network
+trained on the lesslow‐low 2 data set for the original input data, which lack frequency components below 7 Hz, are compared with the amplitude spectrum curves of the
+input data and their corresponding labels.
+
+                                          compared with the pseudo‐label data as well as with the original synthetic data, which are depicted in Figure 1b.
+                                          We can see that the network trained on lesslow‐low data is capable of extending the frequency to a certain extent
+                                          from the original pseudo‐label data.
+                                          The two illustrative examples impart two key insights: first, if we can mitigate the frequency information bias
+                                          between the lesslow‐low and low‐full data sets, we can incrementally approach the frequency extrapolation
+                                          performance of a network trained on the low‐full data set. Second, the networks trained on lesslow‐low data sets
+                                          exhibit a certain capacity to extrapolate lower frequencies in the pseudo‐label data involved in their training. From
+                                          these insights, we can infer that if we iteratively refine the low‐frequency component information of the pseudo‐
+                                          label data using the network trained on the lesslow‐low data, we could ultimately approximate the frequency
+                                          extrapolation performance of an SSL framework on real data. Motivated by this inference, in the following
+                                          section, we will present our SSL framework for low‐frequency extrapolation.
+
+
+                                          2.4. Self‐Supervised Low‐Frequency Extrapolation
+                                          Drawing on the key findings from the previous section, we develop an SSL framework for low‐frequency
+                                          extrapolation. Our framework principally consists of two components: a warm‐up and an IDR phases. The
+                                          detailed algorithmic procedure is delineated in Algorithm 1. In the following, we will elucidate the key com-
+                                          ponents therein.
+                                          First, the NN undergoes a warm‐up phase. We begin by simply employing an L2L procedure to apply a high‐pass
+                                          filter to the original seismic data {xi }Ni=1 , which lacks low‐frequency components, thereby creating a lesslow‐low
+                                          data set {H[xi ],xi }Ni=1 . Subsequently, the NN is subjected to multiple epochs of optimization training on this data
+                                          set. The objective of this process is to enable rapid stabilization of the neural network, allowing it to preliminarily
+                                          capture the characteristics of seismic data. Furthermore, the second finding from the previous section indicates
+                                          that this pretrained network, denoted as NNw, exhibits a certain degree of low‐frequency extrapolation ability with
+                                          respect to the original label data. This capability forms the groundwork for the iterative refinement of the training
+                                          set in subsequent stages.
+                                          Subsequently, the NN enters the IDR phase. In this stage, we first leverage the pretrained network NNw to predict
+                                          the original seismic data. The predictions serve as the initial pseudo‐labels for the IDR phase, with corresponding
+                                          inputs derived from applying a high‐pass filter to these predictions. This procedure facilitates the creation of a
+                                          new lesslow‐low data set, employed for the first epoch of training during the IDR stage:
+
+                                                                                    NN0 ← {(H[NNw (xi )], NNw (xi ))}Ni=1 ,                                          (7)
+
+                                          where the network NN0 is directly initialized from the per‐trained network NNw.
+
+
+CHENG ET AL.                                                                                                                                                    7 of 32
+                                                                                                                                          29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+               JGR: Machine Learning and Computation                                                   10.1029/2024JH000157
+
+
+                 Informed by the first insight from the previous section, we anticipate that after training for one epoch on the new
+                 training set, the low‐frequency extrapolation capability of NN0 will slightly surpass that of NNw. This
+                 improvement is attributed to the fact that, compared to the lesslow‐low data set used during the warm‐up phase,
+                 the new lesslow‐low data set exhibits lower frequency representation bias in the labels when both compared with
+                 the low‐full data set. During the subsequent training, we iteratively perform this process to progressively diminish
+                 the frequency information bias between the lesslow‐low and low‐full data sets. Specifically, for each training
+                 epoch, we first employ the network trained in the previous epoch (e.g., NNj− 1) to predict the original data {xi }Ni=1
+                 and, thus, obtain the frequency‐extended pseudo‐labels {NNj− 1 (xi )}Ni=1 . Then, we apply a high‐pass filter to these
+                 pseudo‐labels to generate corresponding input data {H[NNj− 1 (xi )]}Ni=1 . The resulting lesslow‐low training set
+                 {(H[NNj− 1 (xi )], NNj− 1 (xi ))}Ni=1 will optimize the network NNj for one epoch, for example,
+
+                                                       NNj ← {(H[NNj− 1 (xi )], NNj− 1 (xi ))}Ni=1 .                               (8)
+
+                 After conducting multiple epochs of training in the IDR phase, our network incrementally aligns with the low‐
+                 frequency extrapolation capabilities of a model trained on the low‐full data set.
+
+                 We emphasize that during the warm‐up and IDR stages, the cutoff frequency employed in the high‐pass filtering
+                 operation to remove low‐frequency components is not fixed. In Section 4.4, we will share our experiences to
+                 setting the filter cutoff frequency during training process, which contributes to enhance the network's low‐
+                 frequency extrapolation performance.
+
+                 Algorithm 1. Self-Supervised Low-Frequency Extrapolation
+
+                 Input: Raw band-limited seismic data {xi }Ni=1 .
+                 Input: Neural network model NN.
+                 Input: High-pass filter H [⋅].
+                 Input: Ewarmup: The number of epochs during the warm-up phase.
+                 Input: Eidr: The number of epochs during the iterative data refinement phase.
+                 ——————————— Warm-up phase ——————————
+                 Output: Pretrained model NNw
+                   1: Randomly initialize network parameters θ
+                   2: for j in Ewarmup do
+                   3:    Perform the high-pass filter on raw seismic data H[xi]
+                   4:    Construct the lesslow-low data set {H[xi ],xi }Ni=1
+                   5:    Optimize the network NNw on the lesslow-low data set
+                               NNw ← {H[xi ],xi }Ni=1
+                   6: end for
+                 ———————–Iterative data refinement phase ———————
+                 Output: Final low-frequency extrapolation model NNEidr
+                   7: Predict the raw band-limited seismic data {NNw (xi )}Ni=1
+                   8: Construct the new refined lesslow-low data set
+                               {H[NNw (xi )],NNw (xi )}Ni=1
+                   9: Initialize the network NN0 = NNw
+                   10: Optimize the network NN0 on the new lesslow-low data set for one epoch
+                               NN0 ← {H[NNw (xi )],NNw (xi )}Ni=1
+                   11: for j → 1 in Eidr do
+                   12:    Generate the low-frequency extended data {NNj− 1 (xi )}Ni=1
+                   13:    Construct the new refined lesslow-low data set
+                               {H[NNj− 1 (xi )],NNj− 1 (xi )}Ni=1
+                   14:    Initialize the network NNj = NNj− 1
+                   15:    Optimize the network NNj on the new lesslow-low data set for one epoch
+                               NNj ← {H[NNj− 1 (xi )],NNj− 1 (xi )}Ni=1
+                   16: end for
+
+
+
+CHENG ET AL.                                                                                                                   8 of 32
+                                                                                                                                                               29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                   JGR: Machine Learning and Computation                                                     10.1029/2024JH000157
+
+
+
+
+Figure 2. The neural network architecture used in our study.
+
+
+
+
+                                         2.5. Network Architecture and Training Procedure
+                                         Our SSL framework employs a classic network architecture, namely U‐Net (Ronneberger et al., 2015), which
+                                         has been widely utilized in the NN‐based seismic processing workflows (Cheng et al., 2024; X. Wu et al., 2019;
+                                         F. Yang & Ma, 2019). Figure 2 comprehensively details the network architecture utilized in this study. It is
+                                         noteworthy that we did not strictly follow the classic U‐Net structure but instead made several modifications to
+                                         suit our specific requirements. The first significant change is in scaling: rather than adopting the four scales
+                                         typical of the traditional U‐Net, we incorporate five scales, involving five 2 × 2 downsampling and 2 × 2
+                                         upsampling operations. The rationale behind this modification is that different scales often represent different
+                                         frequency component information. By extracting features across multiple scales, we aim to train an NN that is
+                                         more attuned to various frequency components, which in turn is expected to enhance the network's capability in
+                                         low‐frequency extrapolation. The second modification involves the skip connections at the network's maximum
+                                         scale: they directly receive the input data rather than data that have undergone transformations through an input
+                                         layer. This strategy is adopted to circumvent the loss of original signal information that can be caused by the
+                                         network's depth. Since CNNs could potentially create a smoothing effect, which might entail the loss of high‐
+                                         frequency signals, we deliberately avoid impairing these high‐frequency signals during the process of low‐
+                                         frequency extrapolation. The third modification exists in the convolution layers, whereas the classic U‐Net
+                                         baseline employs a 3 × 3 convolution layer followed by batch normalization (BN) and a leaky rectified
+                                         linear unit (LeakyReLU) activation function, our experiments revealed that incorporating BN would produce
+                                         unstable low‐frequency signals during the IDR phase. Therefore, we omit BN to ensure that the network
+                                         provides a reliable solution.
+                                         During the training process, we present a hybrid loss function to co‐optimize the network. This hybrid loss
+                                         function consists of a data loss Ld and an amplitude spectrum loss La . The data loss measures the difference
+                                         between the NN's outputs Oi i = 1, …, N and the corresponding pseudo‐labels Li, i = 1, …, N, using the mean
+                                         absolute error (MAE) as follows:
+
+
+                                                                                                  1 N
+                                                                                     Ld (L,O) =     ∑|L − Oi |.                                         (9)
+                                                                                                  N i=1 i
+
+
+                                         Compared to the mean squared error (MSE) loss function, the MAE loss function exhibits increased robustness
+                                         toward outliers. As we know, seismic data usually contain significant outliers due to various types of noise. These
+                                         outliers disproportionately influence MSE, potentially leading to suboptimal low‐frequency extrapolation.
+
+
+
+
+CHENG ET AL.                                                                                                                                        9 of 32
+                                                                                                                                            29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+               JGR: Machine Learning and Computation                                                     10.1029/2024JH000157
+
+
+
+
+                 Figure 3. The true Marmousi velocity model.
+
+
+
+                 Therefore, we chose the MAE loss function to make our method more suitable for low‐frequency extrapolation of
+                 noisy data. The amplitude spectrum loss La is obtained by computing the misfit in amplitude spectra between the
+                 network's output and the pseudo‐labels, also employing the MAE metric as follows:
+
+
+                                                                      1 N
+                                                         La (L,O) =     ∑|AS(Li ) − AS(Oi )|,                                       (10)
+                                                                      N i=1
+
+
+                 where the symbol AS(·) represents the operation for obtaining the amplitude spectrum.
+                 The total loss function is defined as
+
+
+                                                          L(L,O) = Ld (L,O) + ϵ ⋅ La (L,O),                                         (11)
+
+
+                 where ϵ is a hyperparameter, which is used to regulate the proportion of the amplitude spectrum loss within the
+                 total loss. In our numerical examples, we set it to a constant value of 0.01. The role of loss La and the setting of the
+                 hyperparameter ϵ will be thoroughly analyzed in the discussion section. We utilize the AdamW optimization
+                 algorithm (Loshchilov & Hutter, 2017) in our training stage. The implementation employs a GeForce RTX 8000
+                 graphics processing unit and leverages the PyTorch framework.
+                 Since our approach utilizes an SSL to train the network, it differs significantly from the supervised learning
+                 paradigm in how we stop the training and the purpose for testing data. In typical supervised learning frameworks,
+                 early stopping techniques, primarily relying on the convergence of the validation set, are often used to determine
+                 when to stop training the NN. However, for our SSL framework, the training data is also the validation/test data.
+                 Instead, a common practice is to set a predefined number of iterations and output intermediate processing results
+                 for the training data at regular intervals. Then, we can assess whether the network has converged to the desired
+                 performance based on these intermediate processing results. Therefore, the iteration count that achieves the
+                 optimal low‐frequency extrapolation performance may not necessarily be the maximum iteration count, and it
+                 depends on our assessment of the processing results.
+
+
+                 3. Numerical Examples
+                 3.1. Synthetic Data
+                 In order to verify the reasonability and accuracy of the proposed algorithm, we first use the simulated data
+                 generated with the Marmousi model to perform the following tests. The modified model size is 2.20 × 6.11 km
+                 with a spatial interval of 10.0 m along both horizontal and vertical directions. Figure 3 displays the true Marmousi
+
+
+CHENG ET AL.                                                                                                                   10 of 32
+                                                                                                                                           29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+               JGR: Machine Learning and Computation                                                    10.1029/2024JH000157
+
+
+                 velocity model with the modified dimensions. A Ricker wavelet with dominant frequency of 15 Hz is used as the
+                 source signal to generate the mimic observed seismic data. We generate a total of 122 shot gathers, each recording
+                 2,401 time steps with a time interval of 0.002 s. The distance between shots is 50 m, with the initial shot located at
+                 the model's far left at zero km. From these 122 shot gathers, we extract a total of 8,200 data patches, each sized
+                 128 × 128. For each patch, we randomly choose the cutoff low‐frequencies between 5 and 15 Hz, forming our
+                 original observed data set. During the warm‐up phase, we randomly filter out frequency components below
+                 6∼30 Hz from the original observed data to generate the input data. As previously described, the pseudo‐label
+                 data at this time is the original observed data. In the IDR phase, the high‐pass filter cutoff frequency range for
+                 the initial 50 epochs is set between 5 and 7 Hz. Then, every 50 epochs, we increase the maximum cutoff frequency
+                 by 2 Hz, while the minimum cutoff frequency remains at 5 Hz. Once the maximum cutoff frequency reaches
+                 15 Hz, it is kept fixed. The network is trained for a total of 550 epochs, with the warm‐up phase accounting for 50
+                 epochs. The learning rate start with 3e− 4 then decreased by a factor of 0.8 at the 65, 130, 195, 260, and 325
+                 epochs.
+                 Figure 4a shows the seismogram of a simulated shot gather. We use a high‐pass filter to cut off different frequency
+                 components, as shown in Figures 4b, 4e, and 4h filtered with 5, 10, and 15 Hz high‐pass filters, respectively.
+                 Figures 4c, 4f, and 4i show the prediction results for these three filtered data respectively, and the residuals
+                 between these prediction results and the mimic observed seismogram are displayed in Figures 4d, 4g, and 4j,
+                 respectively. We can see that for the data lacking frequencies below 5 Hz, our method's prediction exhibits only
+                 very subtle differences compared to the original data. As the data lacks more low frequencies, the errors in our
+                 method's predictions gradually increase, which is expected since it's not straightforward.
+                 To clearly verify the performance of the proposed algorithm in reconstructing the low‐frequency components, we
+                 perform a spectral analysis of the traces at different locations between the original, filtered, and predicted data, as
+                 displayed in Figures 5–7. The predicted amplitude spectrum of data with cutoff frequency of 15 Hz (Figure 5) and
+                 10 Hz (Figure 6) exhibit a good recovery of the filtered out components after applying the proposed algorithm.
+                 The reconstructed low‐frequency components (green line) commendably match the original true information
+                 (orange line) at the missing band range. As for the more practical case with cutoff frequency of 5 Hz (Figure 7),
+                 the proposed extrapolation algorithm can still recover the missing low‐frequency information even to 1.5 Hz.
+                 Therefore, Figures 5–7 prove the accuracy, stability, and reasonability of the proposed SSL low‐frequency
+                 extrapolation algorithm.
+                 Meanwhile, to clearly display the waveform differences between the original, filtered, and predicted data,
+                 Figure 8 compares two seismograms extracted from them, where the receivers are located at the horizontal
+                 distance x = 0.3 km and x = 3.5 km, respectively. We can see that as more frequency components are filtered out,
+                 the waveform differences between the filtered and original data gradually increase, especially for the filtered data
+                 missing frequencies below 15 Hz. In contrast, the waveform of the extrapolated data can match the original data
+                 well. Even for the filtered data missing frequencies below 15 Hz, our method can still reconstruct waveforms that
+                 closely match the original data.
+                 With the predicted data after low‐frequency extrapolation, we perform the following FWI tests. Figure 9 shows
+                 the inversion results with cutoff frequency of 10 Hz. Figure 9a displays the smoothed initial velocity model, which
+                 is far away from the true model in Figure 3. We choose five frequency bands with dominant frequencies of 3, 4, 5,
+                 8, and 15 Hz to perform the multiscale inversion. Figure 9b is the corresponding result of the original full‐band
+                 data, matching the true model perfectly. If we directly use the data with cutoff frequency of 10.0 Hz to conduct the
+                 test, the inversion result is contaminated with artifacts because of the missing low‐frequency information (see
+                 Figure 9c). In comparison, we can reconstruct the subsurface velocity model well with the predicted seismic data
+                 (see Figure 9d). To precisely show the inversion results, we choose the profiles at x = 2.5, 3.5, and 4.5 km and
+                 exhibit them in Figure 10. We can see that the direct inversion of filtered data (red line) is far away from the true
+                 model (blue line). Encouragingly, the inversion result of the predicted data (purple line) is similar to that of the
+                 full‐band original data (green line), both of which match the true model perfectly.
+                 In line with real seismic exploration scenarios, we also perform the tests on the data missing frequency infor-
+                 mation below 5 Hz. In order to highlight the importance of the low frequency components, we use a smoother
+                 velocity as the initial model (Figure 11a). Five frequency bands with dominant frequencies of 2, 3, 5, 8, and 15 Hz
+                 are selected to conduct the multiscale inversion. Figure 11b displays the result of the inversion applied to the
+                 original full‐band data, which also nicely match the true model. When using the filtered data missing frequency
+
+
+CHENG ET AL.                                                                                                                  11 of 32
+                                                                                                                                                   29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+               JGR: Machine Learning and Computation                                                           10.1029/2024JH000157
+
+
+
+
+                 Figure 4. The extrapolation results for the test shot gathers missing different low‐frequency components. (a) The original full
+                 band data; data filtered by different high‐pass filters: (b) 5 Hz, (e) 10 Hz, and (h) 15 Hz; the corresponding data recovered
+                 with the proposed self‐supervised learning algorithm: (c) 5 Hz, (f) 10 Hz, and (i) 15 Hz; the residuals between the prediction
+                 results and the mimic observed seismogram: (d) 5 Hz, (g) 10 Hz, and (j) 15 Hz.
+
+
+
+CHENG ET AL.                                                                                                                           12 of 32
+                                                                                                                                                                            29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                    JGR: Machine Learning and Computation                                                               10.1029/2024JH000157
+
+
+
+
+Figure 5. The amplitude spectrum comparison at different locations: (a) x = 0.3 km, (b) x = 1 km, (c) x = 2 km, (d) x = 3 km, (e) x = 3.5 km, and (f) x = 4 km. The 15 Hz
+high‐pass filter is used.
+
+                                           information below 5 Hz to conduct the test, the inversion result is poor due to the cycle‐skipping issue. With the
+                                           proposed algorithm to extrapolate the filtered data, the inversion result can recover the velocity well. Figure 12
+                                           displays the profiles at x = 2.5, 3.5, and 4.5 km, from which we can see that the result of the filtered data has both
+                                           numerical and depth errors compared to the true model. In contrast, the result of using the predicted data fits the
+                                           true model very well, which is similar to the inversion applied to the original data.
+
+
+                                           3.2. Field Data
+                                           After verifying the accuracy and reasonability of the proposed algorithm, we attempt to apply it to real marine
+                                           seismic data. The data were acquired in North West Australia using a variable depth streamer. The original data
+                                           set comprises 1,824 shots spaced approximately 18.75 m apart laterally. For our test, we select 201 shots, with
+                                           56 m lateral spacing, to lower the computational burden. Each shot gather is acquired through steamer cables with
+                                           a maximum offset of 8.0 km and a 12.5 m recording spacing.
+                                           The original acquired data included frequency components as low as 2.5 Hz. In our experiment, to consider a more
+                                           general scenario where typically collected data lack frequencies below 5 Hz, we filtered out frequencies below
+                                           5 Hz from the original acquired data, treating it as our available observed data. We extract 18,500 data patches
+                                           from the filtered shot gathers, each sized 128 × 128. During the warm‐up phase, the network undergoes pre-
+                                           training for 50 epochs, where the input data is prepared by performing a high‐pass filter with a cutoff frequency of
+                                           10 Hz on the observed data. In the IDR phase, the initial range for the high‐pass filter cutoff frequency is set
+                                           between 1 and 2 Hz and then increases by 0.5 Hz for both the upper and lower limits every 20 epochs. Eventually,
+                                           the filter cutoff frequency is fixed between 4 and 5 Hz. Instead of starting from scratch, here the network is
+                                           initialized from the model trained on the synthetic data. The network is trained with a total of 200 epochs. The
+                                           initial learning rate is 2e− 4, which is reduced by a factor of 0.8 at the 25, 50, 75, 100, 125, and 150 epochs.
+
+
+
+
+CHENG ET AL.                                                                                                                                                    13 of 32
+                                                                                                                                                                  29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                    JGR: Machine Learning and Computation                                                      10.1029/2024JH000157
+
+
+
+
+Figure 6. Similar with Figure 5, but the 10 Hz high‐pass filter is used.
+
+                                          Figure 13a denotes the original seismogram of the first shot. Figure 13b shows the corresponding filtered shot
+                                          gather, where we cut off the information below 5 Hz. Figure 13c is the result after low‐frequency extrapolation
+                                          with the proposed algorithm. Figures 13d–13f displays the energy below 5 Hz of the original, filtered, and
+                                          predicted data from which we find that the original signal below 5 Hz has weaker energy than the predicted one.
+                                          This is because the prediction does not have limitations in the low frequency limit, whereas the data contain
+                                          limited energy below 2.5 Hz. As shown in Figures 13g–13i, we manage to predict low frequency information
+                                          below 2.5 Hz. Figure 13j shows that there still exists some signal of reflected waves, which means that the
+                                          proposed algorithm could extrapolate to frequencies as low as 1.75 Hz.
+
+                                          Figure 14a displays the initial velocity model, and Figures 14b and 14d are the inversion results of the original and
+                                          predicted data with starting dominant frequency of 2.5 Hz. The corresponding inversion results are similar to a
+                                          large degree, indirectly proving that the frequency components within 2.5∼5.0 Hz predicted by our algorithm are
+                                          consistent with the original data. However, the result of the predicted data shows some additional details, which
+                                          correspond to the additional components less than 2.5 Hz after the frequency extrapolation. If we directly use the
+                                          filtered data to perform the inversion, the corresponding inversion result is shown in Figure 14c. We can see that
+                                          two big false faults appear at x = 3 and 8 km caused by the cycle‐skipping problem. To emphasize the positive
+                                          performance of our proposed low‐frequency extrapolation algorithm, we conduct a comparative inversion test
+                                          with an initial dominant frequency of 1.75 Hz. The corresponding outcome is presented in Figure 14e. Contrasting
+                                          the outcomes displayed in Figures 14b and 14d, the result depicted in Figure 14e reveals a more comprehensive
+                                          representation of the background information.
+
+                                          To demonstrate the accuracy of the different velocity models shown in Figure 14, we perform RTM. Figure 15
+                                          shows the corresponding migration images. Compared to the image from the initial model (Figure 15a), those of
+                                          the FWI results (Figures 15b–15e), to some degree, show the stratigraphic relief. To evaluate the accuracy of the
+                                          images, we choose three common image gathers at x = 2.15, 5.5, and 6.9 km to make a detailed analysis, as shown
+                                          in Figure 16. Compared to the other images, that of the predicted data with a starting dominant frequency of
+
+
+
+
+CHENG ET AL.                                                                                                                                          14 of 32
+                                                                                                                                                                    29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                    JGR: Machine Learning and Computation                                                        10.1029/2024JH000157
+
+
+
+
+Figure 7. Similar with Figure 5, but the 5 Hz high‐pass filter is used.
+
+                                          1.75 Hz resulted in less noise (depicted by the dashed square area) and more flat gathers (indicated by the red
+                                          arrows), proving the accuracy of the proposed algorithm.
+
+
+                                          3.3. Application on Earthquake Seismogram Data
+                                          We finally select an earthquake seismogram data to demonstrate the generalizability and feasibility of our method
+                                          for extending the frequency band to ultralow frequency components for large‐scale collected data. This earth-
+                                          quake seismogram data were collected in western Sichuan, China. The distribution of dense seismic stations and
+                                          the structure of the collection area are shown in Figure 17. The waveforms used were recorded from September
+                                          2006 to July 2009.
+                                          In our experiment of low‐frequency extrapolation of earthquake seismogram, we implement several modifica-
+                                          tions compared to processing in exploration data: (a) Instead of extracting two‐dimensional data patches to
+                                          construct data sets, we extract one‐dimensional data, each comprising 128 time steps, directly from the acquired
+                                          data; (b) Given that our training data are one‐dimensional, we adapt our network architecture to include one‐
+                                          dimensional convolutional baselines; (c) In the initial training epochs, due to the network's instability, the pre-
+                                          dicted low‐frequency components include some ultralow‐frequency numerical artifacts. Consequently, in the IDR
+                                          phase, frequencies below 0.1 Hz are filtered out from the network's predicted pseudo‐labels to ensure the stability
+                                          of the network training process. We select two teleseismic events, specifically events 51 and 53, from the
+                                          collected earthquake seismogram. The original collected data contain frequencies below 0.25 Hz. To consider the
+                                          scenario of missing low‐frequencies, we applied a high‐pass filter with a cutoff frequency of 0.25 Hz to the
+                                          original data. The filtered data, assumed as known, are used to construct our training data set. Notably, the original
+                                          collected data are not included in our training set, as our approach operates on an SSL basis. During the training's
+                                          warm‐up and IDR phases, we employ a similar strategy progressively increasing the high‐pass filter cutoff
+                                          frequency range, ultimately fixing it at 0.25 Hz. The network undergoes training for a total of 300 epochs. The
+                                          initial learning rate 1e− 4, and a scheduler reduces it by a factor of 0.8 at the 30, 60, 90, 120, 150, and 180 epochs.
+
+
+
+CHENG ET AL.                                                                                                                                           15 of 32
+                                                                                                                                                                      29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                   JGR: Machine Learning and Computation                                                           10.1029/2024JH000157
+
+
+
+
+Figure 8. Comparison of seismograms between the predicted, the input, and original recordings at different horizontal distances, where the first and second columns
+correspond to x = 0.3 km and x = 3.5 km, respectively. Each column corresponds to the result comparisons of data missing below 5, 10, and 15 Hz from top to bottom.
+
+                                         We present the original seismic waveforms of different teleseismic events (Figure 18 for event 20 and Figure 19
+                                         for event 73), along with the waveforms filtered to exclude frequency components below 0.25 Hz and compared
+                                         these with the predicted waveforms under various low‐pass filters. Due to the complexity of the coda wave
+                                         following the direct P phase, we establish a variable time window to better demonstrate the restoration of low‐
+                                         frequency components in the predicted waveforms relative to the original recordings. This time window is
+                                         indicated by the light green shaded areas in Figures 18 and 19 (panel (a)). Within this window, we extract the
+                                         band‐passed original recordings (black), filtered waveforms (blue), and predicted waveforms (red). We then
+                                         compute their normalized cross‐correlation coefficients (NCC) across different filtering bands (0.01–0.15 Hz,
+                                         0.01–0.2 Hz, 0.01–0.25 Hz, 0.01–0.3 Hz). The NCC values thus reflect the degree of fit from the onset of the P‐
+                                         wave to the later coda waves. As observed in panels (b) of Figures 18 and 19, for different low‐pass filters, the
+                                         predicted waveforms exhibit a better restoration of the original low‐frequency components (the red NCC curves
+                                         are consistently above the blue ones). These results demonstrate the effectiveness of our method in the restoration
+                                         of ultralow‐frequency content in the earthquake waveform data.
+
+                                         4. Discussion
+                                         In this paper, we have concurrently validated the efficacy of our developed low‐frequency extrapolation method
+                                         on both exploration seismic and earthquake seismogram data. Owing to our method's adoption of a SSL paradigm,
+
+
+CHENG ET AL.                                                                                                                                               16 of 32
+                                                                                                                                                                               29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                     JGR: Machine Learning and Computation                                                                10.1029/2024JH000157
+
+
+
+
+Figure 9. (a) The initial velocity model and inversion results generated with different data sets: (b) original full band data, (c) filtered data with a cutoff frequency of
+10 Hz, and (d) the predicted data with the proposed algorithm.
+
+
+                                           it effectively obviates the need for labels, thereby enhancing its practical application potential. Subsequently, we
+                                           will first explain why our framework works. Then, we will discuss the robustness of our method against noisy
+                                           data, the role of the amplitude spectrum loss, and the strategies for the effective setting of filtering frequencies.
+
+
+                                           4.1. Why Our Framework Works?
+                                           As stated in the Introduction and Section 2.2, the feasibility of neural networks (NNs)‐based seismic low‐
+                                           frequency extrapolation has been demonstrated. Many studies have shown the use of NNs to learn the
+
+
+
+
+Figure 10. Profiles at different horizontal distances: (a) x = 2.5 km, (b) x = 3.5 km, and (c) x = 4.5 km. The cutoff frequency is 10 Hz.
+
+
+CHENG ET AL.                                                                                                                                                       17 of 32
+                                                                                                                                                                                29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                     JGR: Machine Learning and Computation                                                                 10.1029/2024JH000157
+
+
+
+
+Figure 11. (a) The initial velocity model and inversion results generated with different data sets: (b) original full band data, (c) filtered data with a cutoff frequency of
+5 Hz, and (d) the predicted data with the proposed algorithm.
+
+
+                                            nonlinear relationship between high‐ and low‐frequency, which is then applied to extrapolate low‐frequency
+                                            contents (Fang et al., 2020; Hu et al., 2021; Y. Jin et al., 2021; Ovcharenko et al., 2019; H. Sun & Demanet, 2020).
+                                            In particular, Ovcharenko et al. (2019) theoretically demonstrated why low‐frequency information can be
+                                            extrapolated from high frequencies. Specifically, they use the acoustic medium as an example. In the frequency
+                                            domain, the pressure wavefield generated by a point source at location xs satisfies the Helmholtz equation:
+
+                                                                                            ω2
+                                                                                      (Δx + 2 ) p(x,ω) = δ(x − xs ) s(ω),                                                (12)
+                                                                                           v (x)
+
+
+
+
+Figure 12. Profiles at different horizontal distances: (a) x = 2.5 km, (b) x = 3.5 km, and (c) x = 4.5 km. The cutoff frequency is 5 Hz.
+
+
+CHENG ET AL.                                                                                                                                                        18 of 32
+                                                                                                                                                    29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+               JGR: Machine Learning and Computation                                                            10.1029/2024JH000157
+
+
+
+
+                 Figure 13. Real marine seismic data, which were acquired from North West Australia. (a) The original observed data, (b) the
+                 data filtered by 5 Hz high‐pass filters, and (c) the predicted data with the proposed algorithm. The frequency components less
+                 than 5 Hz: (d) original data, (e) filtered data, and (f) predicted data. The frequency components less than 2.5 Hz: (g) original
+                 data, (h) filtered data, and (i) predicted data. The frequency components less than 1.75 Hz: (j) predicted data.
+
+
+
+CHENG ET AL.                                                                                                                            19 of 32
+                                                                                                                                                                              29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                     JGR: Machine Learning and Computation                                                                10.1029/2024JH000157
+
+
+
+
+Figure 14. (a) The initial velocity model. Inversion results of different data sets: (b) the original observed data, (c) the data with cutoff frequency of 5 Hz, (d) the
+predicted data (with starting frequency of 2.5 Hz), and (e) the predicted data (with starting frequency of 1.75 Hz).
+
+
+
+                                                               2
+                                                         ∂
+                                           where Δx = ∑i ∂x2 , ω is the angular frequency and v(x) represents the velocity model. They considered the Born
+                                                               i
+
+                                           approximation for perturbed wavefields in a homogeneous medium and represented the relationship between data
+                                           and model spectra as follows:
+
+                                                                                                δp(s,g,ω) ∝ δv(K),                                                     (13)
+
+                                           where the wavenumber K = ω/v(s + g), and s and g are the unit vectors pointing toward the source and the
+                                           receiver, respectively. Since most subsurface models are commonly dominated by horizontal structures, the
+                                           vertical wavenumber in the model spectra controls the variation of horizontal structures along the vertical di-
+                                           rection. Therefore, the relationship between the perturbed wavefield and the wavenumber can be further
+                                           simplified as follows:
+
+                                                                                                 δp(θ,ω) ∝ δv( K z ),                                                  (14)
+
+                                           with the vertical wavenumber
+
+
+
+
+CHENG ET AL.                                                                                                                                                      20 of 32
+                                                                                                                                                                                    29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                      JGR: Machine Learning and Computation                                                                   10.1029/2024JH000157
+
+
+
+
+Figure 15. Reverse time migration images generated with different velocity models: (a) the initial velocity model, (b) the inversion result of original observed data,
+(c) the inversion result of data with cutoff frequency of 5 Hz, (d) the inversion result of the predicted data (with starting frequency of 2.5 Hz), and (e) the inversion result
+of the predicted data (with starting frequency of 1.75 Hz).
+
+
+                                                                                                                  ω    θ
+                                                                                                  K z (θ,ω) = 2     cos ,                                                    (15)
+                                                                                                                  v    2
+
+                                             where θ represents the opening angle between s and g, which encodes the offset.
+                                             We can see that, from Equation 14, if we have a perturbed wavefield δp(θ1, ω1), we can construct a velocity model
+                                             at wavenumber Kz(θ1, ω1) from this perturbed wavefield. Subsequently, we can further model any wavefield, for
+                                             example, δp(θ2, ω2), using this constructed velocity model as follows:
+
+                                                                                           δp(θ1 ,ω1 ) → δv( K z ) → δp(θ2 ,ω2 ).                                            (16)
+
+                                             Thus, our NN here aims to directly learn this nonlinear relationship, for example, δp(θ2, ω2) = NN(δp(θ1, ω1)), to
+                                             extrapolate low‐frequency information from higher frequencies.
+
+                                             However, they ignored an important issue: the learned nonlinear relationship theoretically only applies to specific
+                                             velocity models in which the training data are collected (see Equation 16). In other words, the trained network can
+                                             only produce low‐frequency information corresponding to specific velocity models. In the existing supervised
+                                             learning framework, since the labels of real data are not obtainable, NNs are often trained on the synthetic data.
+                                             Consequently, the trained network encounters performance degradation when applied to field data. One signif-
+                                             icant reason for this is that the trained network can only be applied to specific velocity models used to create the
+                                             synthetic data. When the model spectral characteristics of synthetic and real data significantly differ, the network
+
+
+
+CHENG ET AL.                                                                                                                                                            21 of 32
+                                                                                                                                                                                  29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                      JGR: Machine Learning and Computation                                                                  10.1029/2024JH000157
+
+
+
+
+Figure 16. Common image gathers at the horizontal locations x = 2.15, 5.5, and 6.9 km using: (a) the initial velocity model, (b) the inversion result of original observed
+data, (c) the inversion result of data with cutoff frequency of 5 Hz, (d) the inversion result of the predicted data (with starting frequency of 2.5 Hz), and (e) the inversion
+result of the predicted data (with starting frequency of 1.75 Hz).
+
+                                            fails to effectively extrapolate low frequencies in field data. In contrast, our algorithm employs SSL, meaning that
+                                            we directly train on the data that need to be processed. That is for field data collected in a survey area, we directly
+                                            utilize it to train the NN. Upon completing training, we directly process the observed data to obtain extrapolation
+                                            results, thereby effectively addressing this issue.
+                                            From the results of numerical examples, our method demonstrates the ability to extrapolate low frequencies for
+                                            both synthetic and field data. Although we cannot guarantee the absolute accuracy of these extrapolated fre-
+                                            quencies, the test results indicate that they are indeed effective for FWI, helping to mitigate the cycle‐skipping
+                                            issue. Consequently, we can use the trained network to extrapolate low frequencies, thereby enhancing the ac-
+                                            curacy of the inversion.
+
+
+                                            4.2. Robustness to Noise
+
+                                            It is widely recognized that observed seismic data are invariably contaminated by noise. Therefore, a critical
+                                            examination is the robustness of our method against noise in the data. Recently, an SSL paradigm for noise
+                                            reduction have proven its efficacy in attenuating various types of seismic noise (Cheng, Cheng, et al., 2023). By
+                                            integrating a noise reduction functionality into our SSL low‐frequency extrapolation approach, we can present a
+                                            unified SSL framework. This framework is capable of performing both denoising and low‐frequency extrapo-
+                                            lation processing on seismic data simultaneously. In the following, we will meticulously explore how to make
+                                            fine‐tuned adjustments to the developed SSL algorithms (Algorithm 1) to fulfill this purpose.
+                                            Initially, during the warm‐up phase, we need to alter the generation mode of input data in the lesslow‐low data set.
+                                            This entails adding noise to the original noisy data after it has been high‐pass filtered, for example,
+
+                                                                                            Ii = H[xi ] + ni , i = 1, ⋅ ⋅ ⋅ ,N,                                            (17)
+
+
+
+
+CHENG ET AL.                                                                                                                                                          22 of 32
+                                                                                                                                                                           29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                    JGR: Machine Learning and Computation                                                               10.1029/2024JH000157
+
+
+
+
+Figure 17. The local structure and stations distribution in the selected western Sichuan for the study. The blue triangles in the figure represent the two‐dimensional
+seismic array used in this research. All stations are arranged along a reflection profile: the Aba‐Zigong measurement line (indicated by the thick yellow line). The
+epicenters of the 2008 Wenchuan earthquake (top right) and the 2013 Lushan earthquake (bottom left) are marked with cyan pentagrams.
+
+
+                                          where the Ii represents the input data, and ni denotes the added noise. The pseudo‐labels, however, remain the
+                                          original noisy data xi. It is important to note that the original noisy data also lack low frequency content. In other
+                                          words, the training of our coupled framework for low‐frequency extrapolation and denoising is conducted under
+                                          an SSL paradigm.
+
+                                          Similarly, during the IDR stage, we create a new lesslow‐low data set's input by adding noise to the network's
+                                          predicted results after high‐pass filtering, such as
+
+                                                                                     Ii = H[NN(xi )] + ni , i = 1, ⋅ ⋅ ⋅ ,N.                                        (18)
+
+                                          The pseudo‐labels are still the network's predictions of the original noisy data NN(xi). With these modifications,
+                                          we can see that the input data, compared to the original noisy data, not only lack more low‐frequency components
+                                          but also contain a stronger noise. Consequently, the network is trained to optimize two objectives simultaneously:
+                                          denoising and low‐frequency extrapolation.
+                                          We share an example to validate the performance of the coupled SSL approach. We continue to employ the
+                                          synthetic data generated in Section 3.1. The original noisy data exhibit a deficiency in the low‐frequency range of
+                                          5∼10 Hz, and they include random noise with the levels ranging from 5 to 30 generated by the subsequent
+                                          equation:
+
+                                                                               ni = 0.01 ⋅ ξ ⋅ std(Li ) ⋅ rand(0,1), i = 1, ⋅ ⋅ ⋅ ,N,                               (19)
+
+                                          where the ξ is the noise level, std(Li) represents the standard deviation of the pseudo‐label Li, and rand(0, 1) is the
+                                          standard normal distribution.
+
+
+
+CHENG ET AL.                                                                                                                                                   23 of 32
+                                                                                                                                                                            29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                    JGR: Machine Learning and Computation                                                               10.1029/2024JH000157
+
+
+
+
+Figure 18. The original recordings of the Z component received from teleseismic event 20 shown in black lines in panels (a), following a band‐pass filter (0.01–0.25 Hz).
+The waveforms after filtering out frequencies below 0.25 Hz and then applying the same band‐pass filter (0.01–0.25 Hz) illustrated in blue lines in panels (a). The
+predicted results to the filtered waveforms without low‐frequency components below 0.25 Hz, followed by the same band‐pass filter (0.01–0.25 Hz), represented by red
+lines in panels (a). The panel (b) illustrates a comparison of the normalized cross‐correlation coefficients (NCC) for waveforms with and without low‐frequency
+components below 0.25 Hz and predicted waveforms under four different band‐pass filtering operations (from top left to bottom right: 0.01–0.15 Hz, 0.01–0.2 Hz, 0.01–
+0.25 Hz, 0.01–0.3 Hz). This comparison is conducted for different time windows. These windows are defined from two minimum periods (2/fe, where fe is the highest
+cutoff frequency of the respective band‐pass filter) before the maximum P‐wave amplitude of the broadband waveform (indicated by the cyan dashed line) to varying
+lengths afterward (ranging from 1 s to a maximum of 2.25/fe s). The NCC coefficients are calculated from the band‐pass filtered results of the original waveforms and
+either the predicted waveforms or those without low‐frequency components below 0.25 Hz (represented by red and blue curves, corresponding to the colors in
+panels (a)).
+
+                                           In the warm‐up phase, the network is pretrained for 50 epochs. When we create the lesslow‐low data set, the
+                                           original noisy data are filtered within the range of 6∼25 Hz. The noise level added to the post‐filtered results,
+                                           ranging from 5 to 30, is used to construct the input data. In the IDR phase, the initial 50 epochs involve a random
+                                           high‐pass cutoff frequency ranging from 5 to 6 Hz. Subsequently, every 50 epochs, the upper limit of the high‐
+                                           pass cutoff frequency is increased by 1 Hz. This cutoff frequency range is fixed when it reaches the range of
+                                           5∼10 Hz. Throughout this entire phase, the level of noise added also varies randomly within the range of 5–30.
+                                           The network in total undergoes training across 290 epochs. The initial learning rate is 2e− 4, and a scheduler
+                                           reduces it by a factor of 0.8 for every 65 epochs.
+                                           Figure 20 presents the test results for a noisy shot gather. Panel (a) displays the original simulated data. Panel (b)
+                                           shows the data from panel (a) with frequencies below 10 Hz removed and random noise of level 15 added. The
+                                           corresponding prediction results are shown in panel (c), with the residuals between the prediction and the original
+                                           simulated data displayed in panel (d). Compared to panel (b), panel (e) contains a shot gather with stronger noise,
+                                           the corresponding prediction results for which are shown in panel (f), and the discrepancy between the prediction
+                                           and the original simulated data is displayed in panel (g). It is evident that our framework is effective in removing
+                                           noise. Undoubtedly, our method also attenuates some of the signal energy, particularly the deep signals in sce-
+                                           narios with strong noise. This occurs because we lack frequency components below 10 Hz. In such instances, the
+                                           added noise significantly overwhelms the weaker deep reflection signals, leading to the attenuation of these
+                                           signals' energy while removing noise.
+
+                                           To further validate the frequency extension performance, we plot the amplitude spectrum curve of the prediction
+                                           (panel (f)), which is shown is Figure 21, comparing it with the original simulated data and the test data from panel
+
+
+CHENG ET AL.                                                                                                                                                    24 of 32
+                                                                                                                                                                           29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                    JGR: Machine Learning and Computation                                                              10.1029/2024JH000157
+
+
+
+
+Figure 19. The original recordings of the Z component received from teleseismic event 73 shown in black lines in panel (a), following a band‐pass filter (0.01–0.25 Hz).
+The waveforms after filtering out frequencies below 0.25 Hz and then applying the same band‐pass filter (0.01–0.25 Hz) illustrated in blue lines in panel (a). The
+predicted results of the filtered waveforms without low‐frequency components below 0.25 Hz, followed by the same band‐pass filter (0.01–0.25 Hz), represented by red
+lines in panels (a). The other figures carry explanatory notes consistent with Figure 18.
+
+                                          (e). From the figures, we can see that in the frequency range below 10 Hz, the input test data exhibit random
+                                          fluctuations in the amplitude spectrum due to noise contamination. However, our framework successfully
+                                          removes these noise‐induced artifacts and effectively extends the low‐frequency components. We can clearly see
+                                          that frequencies below 10 Hz have been restored. Also, Figure 22 illustrates the comparisons of seismograms at
+                                          horizontal positions x = 0.3 km and x = 3.5 km among the filtered, noisy input, and original data. We can observe
+                                          that our method effectively reconstructs the phase and amplitude of the noisy data, efficiently removing noise and
+                                          contributing to a waveform matching the original data.
+                                          Furthermore, we make comparisons to the FWI results with different data sets, as shown in Figure 23. Compared
+                                          to the inversion result (Figure 23b) of the noisy data missing the low‐frequency information, the result
+                                          (Figure 23c) of the predicted data after low‐frequency extrapolation can recover the subsurface velocity favor-
+                                          ably, especially in the middle area with adequate acquisition coverage. Figure 24 displays the corresponding
+                                          profiles at x = 2.5, 3.5, and 4.5 km. Obviously, the predicted inversion results (red line) match the true velocity
+                                          (blue line) very well, while the noisy inversion results have a large error.
+
+
+                                          4.3. The Role of the Amplitude Spectrum Loss
+                                          In the process of optimizing network training, we introduce an amplitude spectrum loss to work alongside the data
+                                          loss in measuring the misfit between the network output and the pseudo‐labels. We do this to ensure the network
+                                          focuses not only on data reconstruction but also on maintaining consistency in the frequency domain, as our goal
+                                          is to effectively recover low‐frequency components. Integrating an amplitude spectrum loss compels the network
+                                          to more accurately capture frequency characteristics during training.
+                                          Consequently, a pertinent question arises: how do we adjust the weights of the data and frequency losses? To
+                                          address this issue, we conduct a test to compare how different hyperparameter ξ settings influence the low‐
+                                          frequency extrapolation performance of our method. We employ the same training configuration as in Sec-
+                                          tion 3.1, with the sole difference being the ϵ is set to 0, 0.001, 0.01, 0.1, and 1, where 0 corresponds to using only
+
+
+CHENG ET AL.                                                                                                                                                   25 of 32
+                                                                                                                                                                                 29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                      JGR: Machine Learning and Computation                                                                 10.1029/2024JH000157
+
+
+
+
+Figure 20. Testing the capability of our method to simultaneously restore low‐frequency components and denoise the noisy data with missing low frequencies: (a) the
+mimic observed seismogram generated with the true velocity model, (b, e) are the test data missing low frequencies below 10 Hz but containing noise with a level of 15
+and 30, respectively, (c, f) correspond the network's prediction results to (b) and (e), respectively, (d, g) are the residuals between their prediction results and the mimic
+observed seismogram (a), respectively.
+
+
+
+CHENG ET AL.                                                                                                                                                         26 of 32
+                                                                                                                                                                       29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                   JGR: Machine Learning and Computation                                                            10.1029/2024JH000157
+
+
+
+
+Figure 21. The amplitude spectrum comparison at different horizontal distances: (a) x = 0.3 km, (b) x = 1 km, (c) x = 2 km, (d) x = 3 km, (e) x = 3.5 km, and
+(f) x = 4 km. The test input data lack frequency components below 10 Hz and contain random noise with a noise level of 30.
+
+                                         the data loss. To quantitatively assess the low‐frequency extrapolation performance, we use the MAE metric to
+                                         measure the discrepancy between the prediction and original simulated data. The MAE metrics for networks
+                                         trained with different ϵ settings are displayed in Table 1. It demonstrates that incorporating the amplitude
+                                         spectrum loss contributes to the enhanced performance in low‐frequency extrapolation. For example, the network
+                                         trained with setting ϵ = 0.01 achieves better performance in recovering low‐frequency components than that using
+                                         only data loss, as evidenced by a lower MAE metric.
+
+                                         However, it is crucial to recognize that careful setting of the hyperparameter ϵ is necessary, as excessively high
+                                         values can lead to a decline in network performance. For example, compared to using only data loss, the
+                                         hyperparameter settings of ϵ = 0.1 and ϵ = 1 result in poorer low‐frequency recovery. Based on our experience,
+                                         we find that a hyperparameter setting of ϵ = 0.01 demonstrates the robustness across various data sets,
+
+
+
+
+                                         Figure 22. Comparison of seismograms between the predicted, the input, and original recordings at different horizontal
+                                         locations: (a) x = 0.3 km and (b) x = 3.5 km. The test input data lack frequency components below 10 Hz and contain random
+                                         noise with a noise level of 30.
+
+
+CHENG ET AL.                                                                                                                                                27 of 32
+                                                                                                                                                                   29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                     JGR: Machine Learning and Computation                                                          10.1029/2024JH000157
+
+
+
+
+Figure 23. (a) The initial velocity model. Inversion results of (b) the data with a noise level of 30 and (c) the predicted data.
+
+                                           consistently enhancing low‐frequency extrapolation performance compared to using data loss alone. Therefore,
+                                           we recommend setting this parameter to 0.01, as adopted in our numerical examples.
+
+                                           From the examples on synthetic and field data, we realized that the extrapolation to low frequencies is dependent
+                                           on the distribution of energy along the frequency axis in the original data and specifically the value of the peak
+                                           frequency. Specifically, if the amplitudes in the LessLow is higher compared to the Low, the network will learn to
+                                           increase the amplitude in the extrapolation. This is what was experienced in the Marmousi data where the peak
+                                           frequency of the Ricker wavelet was around 15 Hz. On the other hand, the Australian field data included high
+                                           amplitudes within the low frequency range on the original data (see Figure 25), and as a result, the extrapolation to
+                                           low frequencies maintained the amplitude, which explains our ability to map to very low frequencies for the real
+                                           data, as compared to the Marmousi example.
+
+
+
+
+Figure 24. Profiles at different horizontal distances: (a) x = 2.5 km, (b) x = 3.5 km, and (c) x = 4.5 km.
+
+
+CHENG ET AL.                                                                                                                                           28 of 32
+                                                                                                                                                                     29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                   JGR: Machine Learning and Computation                                                          10.1029/2024JH000157
+
+
+
+ Table 1                                                                       4.4. High‐Pass Filter Setting
+ The Comparison of Low‐Frequency Extrapolation Performance Using               Our method draws inspiration from the Noisier2Noise concept, where we
+ Different Hyperparameter ϵ, Where the Mean Absolute Error (MAE) Metric
+ Has Been Used to Measure the Misfit Between the Prediction and the            create input data that lack even more low‐frequency components by applying
+ Original Simulated Data                                                       a high‐pass filter to the pseudo‐label data. In the process of applying this high‐
+                                                                               pass filter, we need to provide a range for high‐pass cutoff frequencies. It is
+ Hyperparameter setting     Cutoff 5 Hz      Cutoff 10 Hz      Cutoff 15 Hz
+                                                                               important to emphasize that the cutoff frequencies range is not arbitrarily set;
+ ϵ=0                         0.000556          0.000357         0.000251       it involves a certain trick. We will share insights on setting the cutoff fre-
+ ϵ = 0.001                   0.000541          0.000325         0.000207       quency range, which can aid in enhancing the network's low‐frequency
+ ϵ = 0.01                    0.000486          0.000286         0.000198       extrapolation performance.
+ ϵ = 0.1                     0.000951          0.000818         0.000788       First, we need to analyze the frequency distribution range of the seismic data
+ ϵ=1                         0.000619          0.000473         0.000217       we have, as this will provide the prior knowledge required for setting the high‐
+                                                                               pass filter. Taking the synthetic data test in Section 3.1 as an example, we can
+                                                                               determine the range of low frequencies missing in the original data to be
+                                          5∼15 Hz by plotting the amplitude spectrum curve. Subsequently, during the warm‐up phase, our experience in
+                                          setting the cutoff frequency range is guided by the principle that the maximum cutoff frequency should not exceed
+                                          twice the highest missing frequency, and the minimum cutoff frequency should be slightly above the lowest
+                                          missing frequency. Therefore, as observed, in Section 3.1, we set the filtering cutoff frequency range for the
+                                          pseudo‐labels to 6∼30 Hz during the warm‐up phase.
+
+                                          In the IDR phase, the optimal approach is to gradually increase the upper limit of the filter cutoff frequency while
+                                          keeping the lower limit consistent with the lowest frequency missing in the original seismic data. For example, in
+                                          Section 3.1, the range of the filter cutoff frequency for the initial 50 epochs varied randomly between 5 and 7 Hz.
+                                          Then, every 50 epochs, we increased the maximum filter cutoff frequency by 2 Hz. Once the maximum filter
+                                          cutoff frequency aligned with the highest frequency missing in the original seismic data, we maintained this range
+                                          for training until the predefined maximum training epochs. The rationale behind this is our intention to pro-
+                                          gressively enhance the network's low‐frequency extrapolation performance. For example, extending the low‐
+                                          frequency range of data missing frequencies below 10 Hz is simpler compared to data missing frequencies
+                                          below 5 Hz. Hence, we aim for the network to commence learning from these simpler tasks and then progressively
+                                          increase the difficulty during training by incorporating data missing more low frequencies. This approach to
+                                          learning is more stable and significantly improves the network's low‐frequency extrapolation performance.
+
+                                          Here, we present an example to validate the effectiveness of this training strategy. Compared to Section 3.1, we
+                                          only modify the settings of the filter cutoff frequency range. Specifically, in the IDR phase, we abandoned the
+                                          gradually increasing cutoff frequency range setting strategy used in Section 3.1 (referred to as Strategy 1) and
+                                          instead, directly set the cutoff frequency range to 5∼15 Hz (referred to as Strategy 2). We compare the predictions
+                                          of the network models at different training epochs on three test data, each missing frequencies below 5, 10, and
+                                          15 Hz against the network trained in Section 3.1. Figure 26 displays the MAE metrics of the networks using two
+                                                                                different cutoff frequency setting strategies on three test data. The panels a, b,
+                                                                                and c correspond to the seismic data missing frequencies below 5, 10, and
+                                                                                15 Hz, respectively. It is evident that the network employing Strategy 1 shows
+                                                                                gradually improving performance as the training epochs increase. In contrast,
+                                                                                the network using Strategy 2 seems to exhibit a declining performance trend
+                                                                                on all three test data, indicating non‐convergent characteristics. These results
+                                                                                highlight the effectiveness of our proposed training strategy, proving its
+                                                                                significant enhancement in training stability and low‐frequency extrapolation
+                                                                                capabilities of the network.
+
+                                                                               5. Conclusion
+                                                                               We developed a novel neural network (NN)‐based seismic low‐frequency
+                                                                               extrapolation method in a SSL fashion. Under our framework, the NN
+                                                                               sequentially undergoes two stages: warm‐up and IDR. In the warm‐up stage,
+                                                                               we construct a lesslow‐low data set using the original observed data, which
+                                                                               lack low‐frequency components as pseudo‐labels. The input data are obtained
+Figure 25. The amplitude spectrum for original seismic data.                   by applying a high‐pass filter to these pseudo‐labels, resulting in a further loss
+
+
+CHENG ET AL.                                                                                                                                            29 of 32
+                                                                                                                                                                                                29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+                                        JGR: Machine Learning and Computation                                                                         10.1029/2024JH000157
+
+
+
+
+Figure 26. Comparison of the low‐frequency extrapolation performance of networks trained with different high‐pass filter cutoff frequency setting strategies. Strategy 1
+denotes gradually increasing the upper limit of the cutoff frequency during the iterative data refinement (IDR) stage, while Strategy 2 involves setting a fixed cutoff
+frequency range. The panels (a)–(c) correspond to the mean absolute error (MAE) metrics of networks trained with these two strategies on three test data, each missing
+frequencies below 5, 10, and 15 Hz, respectively.
+
+                                            of low‐frequency content. The NN rapidly warms up on this constructed data set, initially extracting the original
+                                            data's frequency characteristics and providing a degree of low‐frequency extension capability. During the IDR
+                                            stage, we update the lesslow‐low data set in each training epoch, where the pseudo‐labels are derived from the
+                                            network's predictions of the original observed data from the previous epoch, and the input data are created by
+                                            applying a high‐pass filter to these predicted pseudo‐labels. Continually updating the training data set allows us to
+                                            gradually reduce the frequency information bias between the network's predictions and the ideal ground truth,
+                                            thereby steadily enhancing the network's low‐frequency extrapolation performance. We validated our method's
+                                            effectiveness on both synthetic and field data in exploration circumstances. The results demonstrated that our
+                                            method effectively extrapolates low‐frequency components, enabling us to address the main challenge of FWI,
+                                            specifically cycle‐skipping. Further testing on earthquake seismogram demonstrated our method's applicability to
+                                            extending ultralow‐frequency content in large‐scale collected data.
+
+                                            Data Availability Statement
+                                            The code and data in this research are available at https://github.com/DeepWave‐KAUST/SSL‐Lowfrequency‐
+                                            extrapolation (Cheng, 2024).
+
+
+Acknowledgments                             References
+This publication is based on work
+supported by the King Abdullah University   Alkhalifah, T., Wang, H., & Ovcharenko, O. (2022). Mlreal: Bridging the gap between training on synthetic data and real data applications in
+of Science and Technology (KAUST). The        machine learning. Artificial Intelligence in Geosciences, 3, 101–114. https://doi.org/10.1016/j.aiig.2022.09.002
+authors thank the DeepWave sponsors for     Alkhalifah, T., & Wu, Z. (2016). Multiscattering inversion for low‐model wavenumbers. Geophysics, 81(6), R417–R428. https://doi.org/10.1190/
+supporting this research. They also thank     geo2015‐0650.1
+CGG for sharing the field seismic data.     Anderson, J. E., Tan, L., & Wang, D. (2012). Time‐reversal checkpointing methods for RTM and FWI. Geophysics, 77(4), S93–S103. https://doi.
+This work utilized the resources of the       org/10.1190/geo2011‐0114.1
+Supercomputing Laboratory at KAUST in       Araya‐Polo, M., Jennings, J., Adler, A., & Dahlke, T. (2018). Deep‐learning tomography. The Leading Edge, 37(1), 58–66. https://doi.org/10.
+Thuwal, Saudi Arabia.                         1190/tle37010058.1
+                                            Ben‐Hadj‐Ali, H., Operto, S., & Virieux, J. (2011). An efficient frequency‐domain full waveform inversion method using simultaneous encoded
+                                              sources. Geophysics, 76(4), R109–R124. https://doi.org/10.1190/1.3581357
+                                            Boonyasiriwat, C., Valasek, P., Routh, P., Cao, W., Schuster, G. T., & Macy, B. (2009). An efficient multiscale method for time‐domain
+                                              waveform tomography. Geophysics, 74(6), WCC59–WCC68. https://doi.org/10.1190/1.3151869
+                                            Bunks, C., Saleck, F. M., Zaleski, S., & Chavent, G. (1995). Multiscale seismic waveform inversion. Geophysics, 60(5), 1457–1473. https://doi.
+                                              org/10.1190/1.1443880
+                                            Cheng, S. (2024). A data source file for review paper “A self‐supervised learning framework for seismic low‐frequency extrapolation”. Zenodo.
+                                              https://doi.org/10.5281/zenodo.10500568
+                                            Cheng, S., Cheng, Z., Jiang, C., Mao, W., & Zhang, Q. (2023). An effective self‐supervised learning method for various seismic noise attenuation.
+                                              arXiv Preprint. arXiv:2311.02193.
+
+
+
+CHENG ET AL.                                                                                                                                                                     30 of 32
+                                                                                                                                                                       29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+               JGR: Machine Learning and Computation                                                                        10.1029/2024JH000157
+
+
+                 Cheng, S., Harsuko, R., & Alkhalifah, T. (2024). Meta‐processing: A robust framework for multi‐tasks seismic processing. Surveys in Geophysics,
+                    1–36. https://doi.org/10.1007/s10712‐024‐09837‐9
+                 Cheng, S., Shi, X., Mao, W., Alkhalifah, T., Yang, T., Liu, Y., & Sun, H. (2023). Elastic seismic imaging enhancement of sparse 4C ocean‐bottom
+                    node data using deep learning. IEEE Transactions on Geoscience and Remote Sensing, 61, 1–14. https://doi.org/10.1109/tgrs.2023.3275614
+                 Chi, B., Dong, L., & Liu, Y. (2015). Correlation‐based reflection full‐waveform inversion. Geophysics, 80(4), R189–R202. https://doi.org/10.
+                    1190/geo2014‐0345.1
+                 Choi, Y., & Alkhalifah, T. (2011). Source‐independent time‐domain waveform inversion using convolved wavefields: Application to the encoded
+                    multisource waveform inversion. Geophysics, 76(5), R125–R134. https://doi.org/10.1190/geo2010‐0210.1
+                 Choi, Y., & Alkhalifah, T. (2012). Application of multi‐source waveform inversion to marine streamer data using the global correlation norm.
+                    Geophysical Prospecting, 60(4), 748–758. https://doi.org/10.1111/j.1365‐2478.2012.01079.x
+                 Du, M., Cheng, S., & Mao, W. (2022). Deep‐learning‐based seismic variable‐size velocity model building. IEEE Geoscience and Remote Sensing
+                    Letters, 19, 1–5. https://doi.org/10.1109/lgrs.2022.3204747
+                 Fabien‐Ouellet, G. (2020). Low‐frequency generation and denoising with recursive convolutional neural networks. In SEG technical program
+                    expanded abstracts 2020 (pp. 870–874). Society of Exploration Geophysicists.
+                 Fang, J., Zhou, H., Elita Li, Y., Zhang, Q., Wang, L., Sun, P., & Zhang, J. (2020). Data‐driven low‐frequency signal recovery using deep‐learning
+                    predictions in full‐waveform inversion. Geophysics, 85(6), A37–A43. https://doi.org/10.1190/geo2020‐0159.1
+                 Fichtner, A., Trampert, J., Cupillard, P., Saygin, E., Taymaz, T., Capdeville, Y., & Villasenor, A. (2013). Multiscale full waveform inversion.
+                    Geophysical Journal International, 194(1), 534–556. https://doi.org/10.1093/gji/ggt118
+                 Gao, Z., Pan, Z., Gao, J., & Wu, R. (2019). Frequency controllable envelope operator and its application in multiscale full‐waveform inversion.
+                    IEEE Transactions on Geoscience and Remote Sensing, 57(2), 683–699. https://doi.org/10.1109/TGRS.2018.2859219
+                 Guo, Q., & Alkhalifah, T. (2017). Elastic reflection‐based waveform inversion with a nonlinear approach. Geophysics, 82(6), R309–R321. https://
+                    doi.org/10.1190/geo2016‐0407.1
+                 Ha, W., & Shin, C. (2012). Laplace‐domain full‐waveform inversion of seismic data lacking low‐frequency information. Geophysics, 77(5),
+                    R199–R206. https://doi.org/10.1190/geo2011‐0411.1
+                 Harsuko, R., & Alkhalifah, T. A. (2022). Storseismic: A new paradigm in deep learning for seismic processing. IEEE Transactions on Geoscience
+                    and Remote Sensing, 60, 1–15. https://doi.org/10.1109/tgrs.2022.3216660
+                 Hu, W., Jin, Y., Wu, X., & Chen, J. (2021). Progressive transfer learning for low‐frequency data prediction in full‐waveform inversion.
+                    Geophysics, 86(4), R369–R382. https://doi.org/10.1190/geo2020‐0598.1
+                 Jin, P., Zhang, X., Chen, Y., Huang, S. X., Liu, Z., & Lin, Y. (2021). Unsupervised learning of full‐waveform inversion: Connecting CNN and
+                    partial differential equation in a loop. arXiv Preprint. arXiv:2110.07584.
+                 Jin, Y., Hu, W., Wang, S., Zi, Y., Wu, X., & Chen, J. (2021). Efficient progressive transfer learning for full‐waveform inversion with extrapolated
+                    low‐frequency reflection seismic data. IEEE Transactions on Geoscience and Remote Sensing, 60, 1–10. https://doi.org/10.1109/tgrs.2021.
+                    3129810
+                 Kim, Y., Shin, C., Calandra, H., & Min, D.‐J. (2013). An algorithm for 3D acoustic time‐Laplace‐Fourier‐domain hybrid full waveform inversion.
+                    Geophysics, 78(4), R151–R166. https://doi.org/10.1190/geo2012‐0155.1
+                 Li, Q., Zhang, Q., Du, Q., & Cheng, S. (2022). Well‐guided multisource elastic full‐waveform inversion. IEEE Transactions on Geoscience and
+                    Remote Sensing, 60, 1–14. https://doi.org/10.1109/tgrs.2022.3200943
+                 Li, S., Liu, B., Ren, Y., Chen, Y., Yang, S., Wang, Y., & Jiang, P. (2020). Deep‐learning inversion of seismic data. IEEE Transactions on
+                    Geoscience and Remote Sensing, 58(3), 2135–2149. https://doi.org/10.1109/TGRS.2019.2953473
+                 Lin, Y., Theiler, J., & Wohlberg, B. (2023). Physics‐guided data‐driven seismic inversion: Recent progress and future opportunities in full‐
+                    waveform inversion. IEEE Signal Processing Magazine, 40(1), 115–133. https://doi.org/10.1109/msp.2022.3217658
+                 Loshchilov, I., & Hutter, F. (2017). Decoupled weight decay regularization. arXiv Preprint. arXiv:1711.05101.
+                 Luo, J., & Wu, R.‐S. (2015). Seismic envelope inversion: Reduction of local minima and noise resistance. Geophysical Prospecting, 63(3), 597–
+                    614. https://doi.org/10.1111/1365‐2478.12208
+                 Ma, Y., & Hale, D. (2013). Wave‐equation reflection traveltime inversion with dynamic warping and full‐waveform inversion. Geophysics, 78(6),
+                    R223–R233. https://doi.org/10.1190/geo2013‐0004.1
+                 Moran, N., Schmidt, D., Zhong, Y., & Coady, P. (2020). Noisier2Noise: Learning to denoise from unpaired noisy data. In Proceedings of the ieee/
+                    cvf conference on computer vision and pattern recognition (pp. 12064–12072).
+                 Mousavi, S. M., & Beroza, G. C. (2022). Deep‐learning seismology. Science, 377(6607), eabm4470. https://doi.org/10.1126/science.abm4470
+                 Nakayama, S., & Blacquière, G. (2021). Machine‐learning‐based data recovery and its contribution to seismic acquisition: Simultaneous
+                    application of deblending, trace reconstruction, and low‐frequency extrapolation. Geophysics, 86(2), P13–P24. https://doi.org/10.1190/
+                    geo2020‐0303.1
+                 Ovcharenko, O., Kazei, V., Alkhalifah, T. A., & Peter, D. B. (2022). Multi‐task learning for low‐frequency extrapolation and elastic model
+                    building from seismic data. IEEE Transactions on Geoscience and Remote Sensing, 60, 1–17. https://doi.org/10.1109/tgrs.2022.3185794
+                 Ovcharenko, O., Kazei, V., Kalita, M., Peter, D., & Alkhalifah, T. (2019). Deep learning for low‐frequency extrapolation from multioffset seismic
+                    data. Geophysics, 84(6), R989–R1001. https://doi.org/10.1190/geo2018‐0884.1
+                 Ovcharenko, O., Kazei, V., Peter, D., & Alkhalifah, T. (2017). Neural network based low‐frequency data extrapolation. In 3rd SEG FWI
+                    workshop: What are we getting?
+                 Ren, Y., Liu, B., Yang, S., Li, D., & Jiang, P. (2021). Seismic data inversion with acquisition adaptive convolutional neural network for geologic
+                    forward prospecting in tunnels. Geophysics, 86(5), R659–R670. https://doi.org/10.1190/geo2020‐0370.1
+                 Ren, Z., & Liu, Y. (2015). Elastic full‐waveform inversion using the second‐generation wavelet and an adaptive‐operator‐length scheme.
+                    Geophysics, 80(4), R155–R173. https://doi.org/10.1190/geo2014‐0516.1
+                 Ronneberger, O., Fischer, P., & Brox, T. (2015). U‐net: Convolutional networks for biomedical image segmentation. In Medical Image
+                    Computing and Computer‐Assisted Intervention–MICCAI 2015: 18th International conference, Munich, Germany, October 5–9, 2015, Pro-
+                    ceedings, Part III 18 (pp. 234–241).
+                 Sun, B., & Alkhalifah, T. (2019). The application of an optimal transport to a preconditioned data matching function for robust waveform
+                    inversion. Geophysics, 84(6), R923–R945. https://doi.org/10.1190/geo2018‐0413.1
+                 Sun, H., & Demanet, L. (2018). Low frequency extrapolation with deep learning. In SEG technical program expanded abstracts 2018 (pp. 2011–
+                    2015). Society of Exploration Geophysicists.
+                 Sun, H., & Demanet, L. (2020). Extrapolated full‐waveform inversion with deep learning. Geophysics, 85(3), R275–R288. https://doi.org/10.
+                    1190/geo2019‐0195.1
+
+
+
+
+CHENG ET AL.                                                                                                                                            31 of 32
+                                                                                                                                                                        29935210, 2024, 3, Downloaded from https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024JH000157, Wiley Online Library on [11/01/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+               JGR: Machine Learning and Computation                                                                         10.1029/2024JH000157
+
+
+                 Sun, H., & Demanet, L. (2021). Deep learning for low‐frequency extrapolation of multicomponent data in elastic FWI. IEEE Transactions on
+                   Geoscience and Remote Sensing, 60, 1–11. https://doi.org/10.1109/tgrs.2021.3135790
+                 Sun, H., Sun, Y., Nammour, R., Rivera, C., Williamson, P., & Demanet, L. (2023). Learning with real data without real labels: A strategy for
+                   extrapolated full‐waveform inversion with field data. Geophysical Journal International, 235(2), 1761–1777. https://doi.org/10.1093/gji/
+                   ggad330
+                 Tarantola, A. (1984). Inversion of seismic reflection data in the acoustic approximation. Geophysics, 49(8), 1259–1266. https://doi.org/10.1190/1.
+                   1441754
+                 Tarantola, A. (1986). A strategy for nonlinear elastic inversion of seismic reflection data. Geophysics, 51(10), 1893–1903. https://doi.org/10.1190/
+                   1.1442046
+                 Virieux, J., & Operto, S. (2009). An overview of full‐waveform inversion in exploration geophysics. Geophysics, 74(6), WCC1–WCC26. https://
+                   doi.org/10.1190/1.3238367
+                 Wang, G., Wang, S., Song, J., Dong, C., & Zhang, M. (2018). Elastic reflection traveltime inversion with decoupled wave equation. Geophysics,
+                   83(5), R463–R474. https://doi.org/10.1190/geo2017‐0631.1
+                 Wang, M., Xu, S., & Zhou, H. (2020). Self‐supervised learning for low frequency extension of seismic data. In SEG technical program expanded
+                   abstracts 2020 (pp. 1501–1505). Society of Exploration Geophysicists.
+                 Wang, Z., Liu, G., Du, J., Li, C., & Qi, J. (2022). Low‐frequency extrapolation of prestack viscoacoustic seismic data based on dense con-
+                   volutional network. IEEE Transactions on Geoscience and Remote Sensing, 60, 1–13. https://doi.org/10.1109/tgrs.2022.3197231
+                 Warner, M., & Guasch, L. (2016). Adaptive waveform inversion: Theory. Geophysics, 81(6), R429–R445. https://doi.org/10.1190/geo2015‐
+                   0387.1
+                 Wu, R.‐S., Luo, J., & Wu, B. (2014). Seismic envelope inversion and modulation signal model. Geophysics, 79(3), WA13–WA24. https://doi.org/
+                   10.1190/geo2013‐0294.1
+                 Wu, X., Liang, L., Shi, Y., & Fomel, S. (2019). FaultSEG3D: Using synthetic data sets to train an end‐to‐end convolutional neural network for 3D
+                   seismic fault segmentation. Geophysics, 84(3), IM35–IM45. https://doi.org/10.1190/geo2018‐0646.1
+                 Wu, Y., & Lin, Y. (2019). Inversionnet: An efficient and accurate data‐driven full waveform inversion. IEEE Transactions on Computational
+                   Imaging, 6, 419–433. https://doi.org/10.1109/tci.2019.2956866
+                 Wu, Z., & Alkhalifah, T. (2017). Efficient scattering‐angle enrichment for a nonlinear inversion of the background and perturbations components
+                   of a velocity model. Geophysical Journal International, 210(3), 1981–1992. https://doi.org/10.1093/gji/ggx283
+                 Xu, S., Wang, D., Chen, F., Zhang, Y., & Lambare, G. (2012). Full waveform inversion for reflected seismic data. In 74th EAGE conference and
+                   exhibition incorporating EUROPEC 2012 (p. cp–293).
+                 Yang, F., & Ma, J. (2019). Deep‐learning inversion: A next‐generation seismic velocity model building method. Geophysics, 84(4), R583–R599.
+                   https://doi.org/10.1190/geo2018‐0249.1
+                 Yang, S., Alkhalifah, T., Ren, Y., Liu, B., Li, Y., & Jiang, P. (2023). Well‐log information‐assisted high‐resolution waveform inversion based on
+                   deep learning. IEEE Geoscience and Remote Sensing Letters, 20, 1–5. https://doi.org/10.1109/lgrs.2023.3234211
+                 Yang, Y., & Engquist, B. (2018). Analysis of optimal transport and related misfit functions in full‐waveform inversion. Geophysics, 83(1), A7–
+                   A12. https://doi.org/10.1190/geo2017‐0264.1
+                 Yang, Y., Engquist, B., Sun, J., & Hamfeldt, B. F. (2018). Application of optimal transport and the quadratic Wasserstein metric to full‐waveform
+                   inversion. Geophysics, 83(1), R43–R62. https://doi.org/10.1190/geo2016‐0663.1
+                 Yao, G., Wu, D., & Wang, S.‐X. (2020). A review on reflection‐waveform inversion. Petroleum Science, 17(2), 334–351. https://doi.org/10.1007/
+                   s12182‐020‐00431‐3
+                 Yao, J., & Wang, Y. (2022). Building a full‐waveform inversion starting model from wells with dynamic time warping and convolutional neural
+                   networks. Geophysics, 87(2), R223–R230. https://doi.org/10.1190/geo2021‐0168.1
+                 Yong, P., Brossier, R., Métivier, L., & Virieux, J. (2023). Localized adaptive waveform inversion: Theory and numerical verification. Geophysical
+                   Journal International, 233(2), 1055–1080. https://doi.org/10.1093/gji/ggac496
+                 Yu, S., Ma, J., & Wang, W. (2019). Deep learning for denoising. Geophysics, 84(6), V333–V350. https://doi.org/10.1190/geo2018‐0668.1
+                 Zhang, Q., Mao, W., Zhou, H., Zhang, H., & Chen, Y. (2018). Hybrid‐domain simultaneous‐source full waveform inversion without crosstalk
+                   noise. Geophysical Journal International, 215(3), 1659–1681. https://doi.org/10.1093/gji/ggy366
+                 Zhang, Q., Zhou, H., Li, Q., Chen, H., & Wang, J. (2016). Robust source‐independent elastic full‐waveform inversion in the time domain.
+                   Geophysics, 81(2), R29–R44. https://doi.org/10.1190/geo2015‐0073.1
+                 Zhang, Q., Zhou, H., Zuo, A., Xia, M., & Wang, J. (2014). Efficient boundary storage strategy for 3D elastic FWI in time domain. In SEG
+                   technical program expanded abstracts 2014 (pp. 1142–1146). Society of Exploration Geophysicists.
+                 Zhang, W., & Gao, J. (2021). Deep‐learning full‐waveform inversion using seismic migration images. IEEE Transactions on Geoscience and
+                   Remote Sensing, 60, 1–18. https://doi.org/10.1109/tgrs.2021.3062688
+                 Zhang, Z.‐D., & Alkhalifah, T. (2019). Local‐crosscorrelation elastic full‐waveform inversion. Geophysics, 84(6), R897–R908. https://doi.org/10.
+                   1190/geo2018‐0660.1
+
+
+
+
+CHENG ET AL.                                                                                                                                             32 of 32
+

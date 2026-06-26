@@ -1,0 +1,358 @@
+  IEEE GEOSCIENCE AND REMOTE SENSING LETTERS, VOL. 19, 2022                                                                                             7506905
+
+
+
+
+            Seismic Resolution Enhancement by Spectral
+            Shaping Using Shaping-Regularized Inversion
+                         Jiao Xue , Member, IEEE, Chengguo Cai , Hanming Gu, and Hongmei Luo
+
+
+
+      Abstract— Seismic deconvolution aims to improve the vertical                 much as possible, and thus to improve the seismic resolution
+  seismic resolution by compressing the seismic wavelet and                        and produce a more interpretable seismic dataset [5], [6].
+  extending the seismic frequency bandwidth. Deconvolution in                          Deconvolution in the frequency or time–frequency domain
+  the frequency domain is normally implemented in three steps:
+  wavelet estimation, deconvolution operator construction, and                     aims to broaden the bandwidth of the seismic data. It is
+  data filtering. We propose a seismic resolution enhancement                      conventionally performed in three consecutive steps: constant-
+  approach by spectral shaping using shaping-regularized inver-                    phase wavelet estimation, deconvolution operator designing,
+  sion. Instead of designing a deconvolution operator based on the                 and seismic filtering using the deconvolution operator as an
+  extracted wavelet, we formulate an inverse problem using the                     inverse filter. The wavelet can be estimated using various
+  seismic spectrum as the diagonal kernel matrix and a predefined
+  filter as the expected spectrum. Assuming the randomness in                      methods including spectral modeling [7], [8], smoothing of
+  the reflectivity and smoothness of the spectral shaping operator,                the spectrum of the seismic data [9], and complex cep-
+  we estimate the spectral shaping operator by inversion via a                     strum averaging [10]. Conventionally, the reciprocal of the
+  shaping regularization scheme, which imposes constraints by                      wavelet spectrum with a small value of prewhitening is
+  shaping the estimated spectral shaping operator model to the                     used as a deconvolution operator [8], [11]. In the wavelet
+  admissible model space. The role of the shaping regularization
+  in inversion is to ensure the continuity and smoothness of the                   scaling algorithm, the deconvolution operator is equivalent
+  spectral shaping operator. We use a synthetic model and real                     to the transferring filter that transfers the estimated wavelet
+  land seismic data to demonstrate the effectiveness of the proposed               spectrum to the stretched spectrum [12]. These approaches
+  approach in seismic resolution enhancement.                                      construct a deconvolution filter using division of the wavelet
+    Index Terms— Deconvolution, resolution enhancement, shaping                    spectrum, as the convolution of the wavelet and reflection
+  regularization, spectral shaping.                                                coefficient in the time domain equals a multiplication of the
+                                                                                   wavelet spectrum and reflectivity spectrum in the frequency
+                             I. I NTRODUCTION                                      domain.
+                                                                                       The scale theorem of the Fourier transform states that
+  S    EISMIC resolution is the key to structure delineation,
+       stratigraphic interpretation, and reservoir characterization.
+  The band-limited seismic source wavelet and the attenua-
+                                                                                   compressing the wavelet in the time domain indicates stretch-
+                                                                                   ing its Fourier spectrum. The estimated wavelet can be
+                                                                                   compressed using a scaling factor in the time or fre-
+  tion and dispersion of seismic waves during propagation are
+                                                                                   quency domain [12], [13]. The deconvolution factor can
+  responsible for the vertical seismic resolution reduction [1].
+                                                                                   further be obtained by solving an inverse problem formu-
+  Reflectivity inversion, known as super-resolution inversion,
+                                                                                   lated between the estimated wavelet and the scaled wavelet.
+  removes the seismic wavelet, extracts the reflection details, and
+                                                                                   Alaei et al. [1] perform scale transform in the time–frequency
+  retrieves the fine-scale structures [2]–[4]. The very fine-scale
+                                                                                   domain, by combining wavelet scaling and Gabor deconvolu-
+  reflectivity results can be used for impedance estimation [2].
+                                                                                   tion. Instead of scaling the wavelet in the frequency domain,
+  Deconvolution, as an essential procedure in seismic data
+                                                                                   Chen and Jin [13] squeeze the wavelet in the time domain
+  processing, is intensively used to remove the source wavelet as
+                                                                                   and perform the waveform shaping by inversion with shaping
+    Manuscript received July 3, 2021; revised September 7, 2021; accepted          regularization.
+  September 27, 2021. Date of publication October 1, 2021; date of current             In the conventional wavelet scaling [12] or waveform shap-
+  version May 11, 2022. This work was supported in part by the National
+  Natural Science Foundation of China under Grant 41904120, in part by the         ing [13], the seismic wavelet or its spectrum is estimated
+  Fundamental Research Funds for the Central Universities, China University        in the first place to formulate the deconvolution transferring
+  of Geosciences, Wuhan, under Grant G1323521085, and in part by the               filter. We propose to transfer the seismic spectrum to any
+  Department of Science and Technology of Sinopec under Grant P20055-8.
+  (Corresponding author: Chengguo Cai.)                                            user-expected spectral shape that makes the seismic section
+    Jiao Xue, Chengguo Cai, and Hanming Gu are with the Institute of               easier to interpret, and we use the seismic spectrum as a
+  Geophysics and Geomatics, China University of Geosciences, Wuhan 430074,         forward modeling operator in the formulation of the inverse
+  China, and also with Hubei Subsurface Multi-Scale Imaging Key Labo-
+  ratory, China University of Geosciences, Wuhan 430074, China (e-mail:            problem. The problem is mathematically equivalent to a pre-
+  xuejiao@cug.edu.cn; ccg119@cug.edu.cn; hmgu@cug.edu.cn).                         conditioned least-square optimization proposed by Fomel [14],
+    Hongmei Luo is with the Research Institute of Exploration and Develop-         which can be solved using shaping regularization.
+  ment, Sinopec Shengli Oilfield Company, Dongying, Shandong 257015, China
+  (e-mail: lhmei2001@163.com).                                                         We first review the conventional deconvolution and wavelet
+    Digital Object Identifier 10.1109/LGRS.2021.3117017                            scaling in the frequency domain and then introduce the spectral
+                          1558-0571 © 2021 IEEE. Personal use is permitted, but republication/redistribution requires IEEE permission.
+                                        See https://www.ieee.org/publications/rights/index.html for more information.
+
+Authorized licensed use limited to: China University of Geosciences Wuhan Campus. Downloaded on June 15,2026 at 08:41:13 UTC from IEEE Xplore. Restrictions apply.
+  7506905                                                                                   IEEE GEOSCIENCE AND REMOTE SENSING LETTERS, VOL. 19, 2022
+
+
+
+  shaping method, which is formulated as a novel inverse                           B. Spectral Shaping
+  problem without considering the wavelet spectrum estimation.                        We modify the wavelet spectral scaling function (5) into a
+  The spectral shaping operator is solved using the shaping                        linear algebra notation and replace the scaled wavelet spectrum
+  regularization framework. Finally, we use the synthetic and                      Ws ( f ) with a user-defined expected spectrum Wexp ( f )
+  field seismic data examples to evaluate the reliability of                        ⎡               ⎤ ⎡                                       ⎤⎡           ⎤
+  the proposed method. The conventional spectral smoothing                             Wexp ( f 1 )     Wa ( f1 )                                 H ( f 1)
+                                                                                    ⎢ Wexp ( f 2 ) ⎥ ⎢            Wa ( f 2 )                  ⎥⎢ H ( f 2 ) ⎥
+  method is used as a reference to illustrate the effectiveness                     ⎢               ⎥ ⎢                                       ⎥⎢           ⎥
+                                                                                    ⎢       ..      ⎥=⎢                      . .              ⎥⎢ .. ⎥
+  of the proposed method.                                                           ⎣        .      ⎦ ⎣                          .            ⎦ ⎣    . ⎦
+                                                                                      Wexp ( f N )                                 Wa ( f N )     H ( fN)
+                                                                                                                                                         (7)
+                                 II. M ETHOD
+                                                                                   where f i denotes the i th sampling frequency and H ( f )
+  A. Resolution Enhancement in the Frequency Domain                                denotes the spectral shaping operator. Equation (7) can be
+     The convolutional model of a seismic trace can be expressed                   abbreviated as the common form
+  as the convolution of the seismic wavelet and the reflectivity                                                     d = Gm                                 (8)
+  series. In the frequency domain, the Fourier transform of the
+  seismic data is the multiplication of the wavelet spectrum and                   where G is a diagonal kernel matrix with the wavelet ampli-
+  the reflectivity spectrum                                                        tude spectrum components Wa ( f i ) on its main diagonal, m is
+                                                                                   a column vector consisting of the spectral shaping operator
+                          S( f ) = W ( f ) · R( f )                        (1)     elements at each frequency, and d is the predefined wavelet
+                                                                                   expected spectrum. The special case of
+                                                                                                                            T
+  where S, W , and R are the Fourier spectra of the seismic data,                                   d = 1 1 ··· 1                             (9)
+  wavelet, and reflectivity, respectively. Assuming the wavelet to
+  be zero-phased, the reflectivity spectrum can be written as the                  implies that the expected wavelet is impulsive with a flat spec-
+  division of the seismic spectrum and the wavelet amplitude                       trum. Besides a flat spectrum, the expected wavelet spectrum
+  spectrum                                                                         can be given as any user-defined wavelet spectrum that makes
+                                                                                   the seismic trace more interpretable. One of the options is the
+                          R( f ) = S( f )/Wa ( f )                         (2)     scaled wavelet spectrum [12]
+                                                                                                            Ws ( f ) = Wa ( f /a)                         (10)
+  where Wa ( f ) = |W ( f )| represents the wavelet amplitude
+  spectrum.                                                                        where a represents the scaling factor, which can be constant
+    The deconvolution operator is defined as the reciprocal of                     or frequency-dependent. The seismic wavelet can thus be
+  the wavelet amplitude spectrum                                                   compressed or shaped to decrease wavelet interfaces.
+
+                            H ( f ) = 1/Wa ( f ).                          (3)     C. Spectral Shaping Operator Estimation Using Shaping
+                                                                                   Regularization
+    A small value of prewhitening σ can be added in the                               The wavelet spectrum can be estimated using spectral
+  division to prevent the denominator to be zero                                   modeling [8], [15], based on polynomial fitting. The amplitude
+                                                                                   spectrum of the wavelet varies slowly with frequency, whereas
+                                            1                                      that of the reflectivity varies rapidly [10], and therefore, it can
+                          H( f ) =                 .                       (4)
+                                      Wa ( f ) + σ                                 also be estimated using smoothing of the seismic spectrum
+                                                                                                    ⎡            ⎤      ⎡           ⎤
+     An alternative way for resolution enhancing is compressing                                        Wa ( f1 )          |S( f1 )|
+                                                                                                    ⎢ Wa ( f 2 ) ⎥      ⎢ |S( f2 )| ⎥
+  the wavelet in the time domain [13] or stretching its spectrum                                    ⎢            ⎥      ⎢           ⎥
+                                                                                                    ⎢      ..    ⎥ = Ps ⎢    ..     ⎥             (11)
+  in the frequency domain by scaling [12], which indicates                                          ⎣       .    ⎦      ⎣     .     ⎦
+                                                                                                        Wa ( f N )            |S( f N )|
+                          Wa ( f )H ( f ) = Ws ( f )                       (5)
+                                                                                   where Ps denotes a smoothing operator. We further assume a
+                                                                                   nonlinear smoothing operator Fs to express the operator G as
+  where Ws ( f ) denotes the stretched wavelet spectrum obtained
+  by the multiplication of the extracted wavelet spectrum and a                                                  G = Fs [L]                               (12)
+  scaling factor. The transferring filter can be obtained by the
+                                                                                   where L is a diagonal operator made from the seismic ampli-
+  least-square method given by Chen and Wang [12]
+                                                                                   tude spectrum
+                                                                                                ⎡                                 ⎤
+                                   Wa ( f )                                                       |S( f1 )|
+                      H( f ) =                  Ws ( f ).                  (6)                  ⎢                                 ⎥
+                                 Wa ( f ) + σ 2
+                                  2
+                                                                                                ⎢           |S( f 2 )|            ⎥
+                                                                                           L=⎢                         ..         ⎥.      (13)
+                                                                                                ⎣                         .       ⎦
+    The scaled seismic spectrum is given by the multiplication
+  of the transferring filter and the seismic spectrum.                                                                               |S( f N )|
+
+Authorized licensed use limited to: China University of Geosciences Wuhan Campus. Downloaded on June 15,2026 at 08:41:13 UTC from IEEE Xplore. Restrictions apply.
+  XUE et al.: SEISMIC RESOLUTION ENHANCEMENT BY SPECTRAL SHAPING                                                                                         7506905
+
+
+
+       Consequently, the spectral shaping function (8) transforms
+  to
+                                d = Fs [L]m.                              (14)
+   The role of Fs in (14) is smoothing the elements in the
+  matrix L. An alternative modification of (14) is
+                                  d ≈ LPm                                 (15)
+  where P denotes a model-reparameterization operator. This
+  indicates shaping regularization [14] can be used in the inver-
+  sion scheme. Incorporating the shaping operator S into the
+  inversion yields
+                                          −1
+              m = λ2 I + S LT L − λ2 I        SLT d          (16)
+  where λ is the least-squares norm of L. The shaping operator
+  is conventionally defined as a triangle smoother [16], Gaussian
+  smoother [15], or nonlinear thresholding operator [13]. We use
+  a second-order differential matrix to generate the shaping                       Fig. 1.    Synthetic model example. (a) Reflectivity model. (b) Synthetic
+  operator                                                                         seismic trace obtained by convolution of the reflectivity model and a 35-Hz
+                                                                                   Ricker wavelet. (c) Amplitude spectra of the reflectivity, synthetic data, and
+                                                −1
+                             S = I + DT D                                 (17)     the estimated wavelet using spectral smoothing.
+
+  with
+                 ⎡                                         ⎤
+                     1   −2      1                                                 the frequency domain estimates the wavelet spectrum and
+             ⎢           1      −2       1                 ⎥
+             ⎢                                             ⎥                       then constructs the deconvolution operator using division as
+           D=⎢                  ..      ..     ..          ⎥          .   (18)     in (4). We use the conventional deconvolution based on
+             ⎣                     .       .    .          ⎦
+                                                                                   spectral smoothing as a reference technique to illustrate the
+                                         1     −2      1   (N −2)×N                effectiveness of the proposed spectral shaping approach.
+     The word “shaping” has multiple meanings and may bring                           For the wavelet spectrum estimation using seismic spectral
+  confusion. By spectral shaping, we shape the seismic spectrum                    smoothing, a 40-point Gaussian window with a width factor
+  to a more ideal spectrum                                                         α = 4 is used to smooth the seismic amplitude spectrum.
+                                                                                   Fig. 1(c) shows the peak frequency of the estimated wavelet
+                           Ssp ( f ) = H ( f )S( f )                      (19)
+                                                                                   is 33 Hz, which is close to that of the true wavelet (35 Hz).
+  where Ssp denotes the seismic spectrum after spectral shaping.                      We process the synthetic data using both the division-based
+  By shaping regularization, on the other hand, we shape the                       deconvolution and the proposed spectral shaping method.
+  inverted model (i.e., spectral shaping operator) to an admissi-                  In the deconvolution operator calculation, the prewhitening
+  ble model space during the process of least-square inversion                     parameter is set to be σ = 0.05 max(Wa ( f )). Fig. 2(c) and (d)
+  [refer to (16)]. In this case, the spectral shaping operator H ( f )             shows the division-based deconvolution results, using the true
+  is used to shape the seismic spectrum, whereas the shaping                       wavelet and the smoothed seismic spectrum, respectively.
+  operator [in (17)] is used to shape (smooth) the model (i.e.,                    Fig. 2(d) and (e) shows the spectral shaping results using the
+  the spectral shaping operator) in the inversion scheme.                          true wavelet spectrum and the seismic amplitude spectrum
+                                                                                   as the diagonal kernel matrix, respectively. Overall, both
+                               III. E XAMPLES                                      the conventional deconvolution and the proposed spectral
+                                                                                   shaping approaches resolve most of the thin layers slightly.
+     The capability of the proposed spectral shaping method
+                                                                                   The inversion-based spectral shaping results are better than
+  using shaping regularization is evaluated using synthetic and
+                                                                                   the division-based deconvolution ones for the close reflectors
+  field examples. The results of the proposed seismic resolution
+                                                                                   within the red rectangles, in the sense that the reflection
+  enhancement approach are compared with the conventional
+                                                                                   events are easier to distinguish. Fig. 2(e) uses the true wavelet
+  deconvolution result.
+                                                                                   spectrum to construct the kernel matrix in (8) and to invert
+                                                                                   for the spectral shaping operator. In Fig. 2(f), however,
+  A. Synthetic Data                                                                the spectral shaping operator is estimated using the seismic
+     We consider a 1-D model, which is a reflectivity series                       amplitude spectrum as the diagonal kernel matrix in (15),
+  assembled model, as shown in Fig. 1(a). Fig. 1(b) shows the                      without knowing the wavelet spectrum. Comparison of the
+  synthetic seismic trace obtained by convolving the reflectivity                  processed seismic data illustrates that the shaping regularized
+  series and a 35-Hz Ricker wavelet. The seismic spectrum,                         inversion-based spectral shaping is an effective way to improve
+  against the right y-axis, exhibits an obvious band limit char-                   the seismic resolution, without wavelet estimation. Further-
+  acter compared with the reflectivity spectrum against the                        more, we add 30% random Gaussian noise to the synthetic
+  left y-axis [Fig. 1(c)]. The conventional deconvolution in                       data [Fig. 2(g)]. High-frequency noise will be boosted after
+
+Authorized licensed use limited to: China University of Geosciences Wuhan Campus. Downloaded on June 15,2026 at 08:41:13 UTC from IEEE Xplore. Restrictions apply.
+  7506905                                                                                      IEEE GEOSCIENCE AND REMOTE SENSING LETTERS, VOL. 19, 2022
+
+
+
+
+                                                                                      Fig. 3.     Amplitude spectra before and after deconvolution and spectral
+                                                                                      shaping. (a) Deconvolution using the true wavelet. (b) Deconvolution using
+                                                                                      the wavelet spectrum estimated by spectral smoothing. (c) Proposed spectral
+                                                                                      shaping result using the true wavelet spectrum. (d) Proposed spectral shaping
+                                                                                      result using the seismic amplitude spectrum as the diagonal kernel matrix.
+                                                                                      (e) Spectral shaping result of the noisy seismic trace with 30% random noise.
+  Fig. 2. Comparison of the deconvolution and spectral shaping results. (a) True
+  reflectivity. (b) Synthetic seismic trace. (c) Processed by division-based decon-
+  volution with true wavelet. (d) Processed by division-based deconvolution           wavelet spectrum [Fig. 3(c)] yields an amplitude spectrum
+  using the smoothed seismic spectrum as the wavelet spectrum. (e) Processed          that is closest to that of the reflectivity. The inversion-based
+  by the proposed spectral shaping method using the true wavelet spectrum.
+  (f) Processed by the proposed spectral shaping method using the seismic             spectral shaping result using the seismic amplitude spectrum
+  amplitude spectrum as the diagonal kernel matrix. (g) Synthetic seismic trace       produces the flattest spectrum density among all schemes.
+  with 30% random noise. (h) Spectral shaping result of the noisy seismic trace.      Fig. 3(e) indicates that the noise attenuation problem and the
+                                                                                      resolution enhancement problem are solved simultaneously,
+  the division-based deconvolution, for the noisy seismic data.                       by applying the spectral shaping method.
+  Therefore, we should perform a bandpass filter on the decon-                           The normalized correlation coefficient γ can be used
+  volution result, or, alternatively, perform denoising before                        to evaluate the capability of the resolution enhancement
+  the deconvolution. The proposed spectral shaping method,                            approach, by measuring the similarity of the reflectivity and
+  however, can avoid boosting noise contained in the noisy                            the seismic data
+  seismic data by setting an appropriate expected spectrum in                                                         ŝT r̂
+                                                                                                              γ =                                 (20)
+  the shaping-regularized inversion. Fig. 2(h) shows the verti-                                                    ŝ2 r̂2
+  cal seismic resolution is enhanced and the random noise is
+                                                                                      where r̂ and ŝ are the vectors formed by the reflectivity series
+  removed simultaneously by spectral shaping. The expected
+                                                                                      and the seismic data, respectively. Fig. 4 shows the correlation
+  spectrum is a bandpass filter with a passband of 5–70 Hz for
+                                                                                      coefficient between the reflectivity and seismic data increases
+  this case.
+                                                                                      after resolution enhancement, in both the time and frequency
+     The methods are further evaluated using the amplitude
+                                                                                      domains (0–150 Hz). Also, note that the spectral shaping result
+  spectrum distribution. In Fig. 3, we display the amplitude
+                                                                                      has a higher correlation with the reflectivity than the division-
+  spectra of the true reflectivity, original synthetic signal, and
+                                                                                      based deconvolution results.
+  the seismic data after the division-based deconvolution and
+  the inversion-based spectral shaping. The black line is the
+  reflectivity spectrum, the blue line is the seismic spectrum,                       B. Field Data
+  and the magenta line represents the results after band exten-                          We use field seismic data to test the proposed spectral
+  sion using deconvolution and spectral shaping. Fig. 3(a)                            shaping technique in this section. We apply the proposed
+  shows that the bandwidth is broadened to some extent for                            inversion-based spectral shaping approach to the land seismic
+  the deconvolution technique. The deconvolution performance                          section shown in Fig. 5(a), which consists of 200 traces
+  depends on the wavelet estimation and the prewhitening factor.                      with 500 sampling points and a sampling interval of 2 ms.
+  The inversion-based spectral shaping result using the true                          We use a rectangle bandpass filter with the passband frequency
+
+Authorized licensed use limited to: China University of Geosciences Wuhan Campus. Downloaded on June 15,2026 at 08:41:13 UTC from IEEE Xplore. Restrictions apply.
+  XUE et al.: SEISMIC RESOLUTION ENHANCEMENT BY SPECTRAL SHAPING                                                                                        7506905
+
+
+
+                                                                                   shaping depends on the expected spectrum, which can be
+                                                                                   any predefined filter or wavelet spectrum. In this example,
+                                                                                   the expected spectrum is assumed to be a rectangle bandpass
+                                                                                   filter to prevent boosting the noise in high frequencies. In prac-
+                                                                                   tice, possible options for the expected spectrum include the all-
+                                                                                   pass filter, the bandpass filters, the Ricker wavelet spectrum
+  Fig. 4. Normalized correlation coefficient of the reflectivity and the seismic
+                                                                                   with higher peak frequency, the integral-Ricker wavelet spec-
+  data before and after resolution enhancement.                                    trum, the stretched wavelet spectrum, and other user-defined
+                                                                                   spectral functions.
+
+                                                                                                             IV. C ONCLUSION
+                                                                                      We have proposed a spectral shaping technique to extend
+                                                                                   the bandwidth of the seismic data and to enhance the seismic
+                                                                                   resolution. The spectral shaping technique can be implemented
+                                                                                   in two steps: estimating the spectral shaping operator and
+                                                                                   spectral shaping (filtering) using the spectral shaping operator.
+                                                                                   We formulate an inverse problem by shaping the seismic
+                                                                                   amplitude spectrum to an expected spectrum and invert for the
+                                                                                   spectral shaping operator via a shaping regularization scheme.
+                                                                                   The synthetic model and field seismic data illustrate the effec-
+                                                                                   tiveness of the proposed method for resolution enhancement.
+
+                                                                                                                R EFERENCES
+                                                                                    [1] N. Alaei, A. R. Kahoo, A. K. Rouhani, and M. Soleimani, “Seismic
+                                                                                        resolution enhancement using scale transform in the time-frequency
+                                                                                        domain,” Geophysics, vol. 83, no. 6, pp. V305–V314, Nov. 2018.
+                                                                                    [2] C. I. Puryear and J. P. Castagna, “Layer-thickness determination and
+                                                                                        stratigraphic interpretation using spectral inversion: Theory and appli-
+                                                                                        cation,” Geophysics, vol. 73, no. 2, pp. R37–R48, Mar. 2008.
+                                                                                    [3] S. Chopra, J. P. Castagna, and Y. Xu, “Thin-bed reflectivity inversion
+                                                                                        and some applications,” 1st Break, vol. 27, no. 5, pp. 27–34, May 2009.
+                                                                                    [4] H. Chen, J. Gao, and B. Zhang, “An adaptive time-varying seismic super-
+  Fig. 5. Field seismic section example. (a) Original seismic section. (b) Seis-        resolution inversion based on L p regularization,” IEEE Geosci. Remote
+  mic section obtained by the proposed spectral shaping approach.                       Sens. Lett., vol. 18, no. 8, pp. 1481–1485, Aug. 2021.
+                                                                                    [5] E. A. Robinson, “Predictive decomposition of time series with applica-
+                                                                                        tion to seismic exploration,” Geophysics, vol. 32, no. 3, pp. 418–484,
+                                                                                        1967.
+                                                                                    [6] K. Nose-Filho, A. K. Takahata, R. Lopes, and J. M. T. Romano,
+                                                                                        “Improving sparse multichannel blind deconvolution with correlated
+                                                                                        seismic data: Foundations and further results,” IEEE Signal Process.
+                                                                                        Mag., vol. 35, no. 2, pp. 41–50, Mar. 2018.
+                                                                                    [7] A. L. R. Rosa and T. J. Ulrych, “Processing via spectral modeling,”
+                                                                                        Geophysics, vol. 56, no. 8, pp. 1244–1251, Aug. 1991.
+                                                                                    [8] M. G. Mamasani, N. S. Manaman, K. Kazemi, and M. Mirzakhanian,
+                                                                                        “Resolution enhancement of seismic data using spectral modeling based
+                                                                                        on dominant Ricker components and separable nonlinear least squares,”
+  Fig. 6. Average amplitude spectra of the seismic section before and after             Lead. Edge, vol. 36, no. 6, pp. 480–486, Jun. 2017.
+  spectral shaping.                                                                 [9] X. Liu, F. Gao, Y. Zhang, Y. Rao, and Y. Wang, “Seismic resolu-
+                                                                                        tion enhancement in shale-oil reservoirs,” Geophysics, vol. 83, no. 5,
+                                                                                        pp. B281–B287, Sep. 2018.
+                                                                                   [10] R. M. Otis and R. B. Smith, “Homomorphic deconvolution by log spec-
+  of 6–50 Hz as the expected spectrum for the spectral shaping                          tral averaging,” Geophysics, vol. 42, no. 6, pp. 1146–1157, Oct. 1977.
+  method. The seismic events can be distinguished more easily                      [11] A. J. Berkhout, “Least-squares inverse filtering and wavelet deconvolu-
+                                                                                        tion,” Geophysics, vol. 42, no. 7, pp. 1369–1383, Dec. 1977.
+  and more thin layers can be identified after spectral shaping                    [12] S. Chen and Y. Wang, “Seismic resolution enhancement by frequency-
+  [Fig. 5(b)].                                                                          dependent wavelet scaling,” IEEE Geosci. Remote Sens. Lett., vol. 15,
+     We define the effective bandwidth as the frequency range                           no. 5, pp. 654–658, May 2018.
+                                                                                   [13] Y. Chen and Z. Jin, “Simultaneously removing noise and increasing
+  where the normalized amplitudes are greater than 0.4, such                            resolution of seismic data using waveform shaping,” IEEE Geosci.
+  that the effective bandwidth of the seismic data after spec-                          Remote Sens. Lett., vol. 13, no. 1, pp. 102–104, Jan. 2016.
+  tral shaping is consistent with the passband of the expected                     [14] S. Fomel, “Shaping regularization in geophysical-estimation problems,”
+                                                                                        Geophysics, vol. 72, no. 2, pp. R29–R36, Mar. 2007.
+  spectrum. Fig. 6 shows that the effective bandwidth for the                      [15] H.-L. Zhou, C.-C. Wang, K. J. Marfurt, Y.-W. Jiang, and J.-X. Bi,
+  average amplitude spectrum of the original seismic section                            “Enhancing the resolution of non-stationary seismic data using improved
+  is 11–35 Hz. Both the lower and higher frequency parts are                            time–frequency spectral modelling,” Geophys. J. Int., vol. 205, no. 1,
+                                                                                        pp. 203–219, Apr. 2016.
+  enhanced after spectral shaping, and the effective bandwidth                     [16] S. Fomel, “Local seismic attributes,” Geophysics, vol. 72, no. 3,
+  has been shaped to about 6–50 Hz. The spectrum after spectral                         pp. A29–A33, May 2007.
+
+
+Authorized licensed use limited to: China University of Geosciences Wuhan Campus. Downloaded on June 15,2026 at 08:41:13 UTC from IEEE Xplore. Restrictions apply.
+

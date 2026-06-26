@@ -1,0 +1,34 @@
+25号实验：F3风格统计迁移的合成样本预览
+====================================
+
+本轮只生成合成剖面预览，不训练网络。
+
+关键边界
+--------
+
+训练输入不能直接使用真实F3低通剖面，否则训练输入和最终推理输入一致，网络只会学习人为规则映射。
+
+25号采用更严格的方案：
+
+1. F3低通数据只用于提取统计风格，不作为训练输入。
+2. 训练输入仍然是井反射系数生成的合成低通剖面。
+3. 标签仍然是合成宽频减合成低通得到的高频残差。
+4. F3统计只迁移到合成剖面上，包括振幅包络、局部倾角、横向相干尺度、断续性和噪声纹理。
+
+当前输出
+--------
+
+25_synthetic_f3_style_samples/figures/ 下生成：
+
+- 2well_f3_style_synthetic_section.png
+- 3well_f3_style_synthetic_section.png
+- 4well_f3_style_synthetic_section.png
+
+每张图包含：
+
+1. Synthetic low-pass input
+2. Synthetic wide label
+3. Residual label
+4. F3 low-pass style reference
+
+其中第4幅只作为统计风格参考，不是训练输入。

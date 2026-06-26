@@ -1,0 +1,38 @@
+传统方法拓频F3低通数据测试评价总结
+========================================
+
+本轮版本：极激进参数版。
+目录组织：文献复现方法统一放在 根目录/传统方法拓频/ 下，不再使用23-27编号。
+参数调整：低频强制保护降到约12Hz，过渡约6Hz；目标频带推到约90-120Hz；增益上限进一步提高；带限细节注入幅度约翻倍。
+输入数据：F3实际宽频剖面低通得到的窄频数据。评价参考：同一位置F3实际宽频剖面，仅用于评价。
+
+一、结果汇总
+
+spectral_shaping_sri  谱整形正则化反演  相关性不低于低通基线剖面数 0/8
+  inline:   corr=0.347263  delta=-0.278549  hf_ratio=0.443131  hf_delta=+0.443131  res_corr=-0.012905  phase=-0.023792  spectrum_l1=0.305693
+  crossline:corr=0.346179  delta=-0.240905  hf_ratio=0.443816  hf_delta=+0.443816  res_corr=0.004516  phase=0.006716  spectrum_l1=0.285745
+
+low_frequency_protection_cs  低频保护谱外推  相关性不低于低通基线剖面数 0/8
+  inline:   corr=0.387267  delta=-0.238545  hf_ratio=0.415454  hf_delta=+0.415454  res_corr=-0.000968  phase=-0.002447  spectrum_l1=0.292565
+  crossline:corr=0.382080  delta=-0.205003  hf_ratio=0.414610  hf_delta=+0.414610  res_corr=0.015401  phase=0.024793  spectrum_l1=0.269447
+
+self_supervised_idr_spectral  自监督IDR谱外推  相关性不低于低通基线剖面数 0/8
+  inline:   corr=0.325974  delta=-0.299838  hf_ratio=0.434526  hf_delta=+0.434526  res_corr=-0.062810  phase=-0.116201  spectrum_l1=0.316198
+  crossline:corr=0.317059  delta=-0.270024  hf_ratio=0.436584  hf_delta=+0.436584  res_corr=-0.049265  phase=-0.090370  spectrum_l1=0.299863
+
+fractional_time_frequency  分数阶时频谱拓频  相关性不低于低通基线剖面数 0/8
+  inline:   corr=0.299358  delta=-0.326454  hf_ratio=0.459044  hf_delta=+0.459044  res_corr=-0.048759  phase=-0.088476  spectrum_l1=0.324013
+  crossline:corr=0.294147  delta=-0.292937  hf_ratio=0.461411  hf_delta=+0.461411  res_corr=-0.033900  phase=-0.061178  spectrum_l1=0.308079
+
+nonstationary_sparse_inversion  非稳态稀疏反演近似  相关性不低于低通基线剖面数 0/8
+  inline:   corr=0.102532  delta=-0.523280  hf_ratio=0.768337  hf_delta=+0.768337  res_corr=0.011701  phase=0.017272  spectrum_l1=0.352479
+  crossline:corr=0.098119  delta=-0.488965  hf_ratio=0.773850  hf_delta=+0.773850  res_corr=0.019207  phase=0.027842  spectrum_l1=0.338389
+
+二、评价
+
+1. 这一轮频谱拓宽已经非常明显，多数方法的35-80Hz高频比例明显高于上一轮。
+2. 相关性和相位分数同步大幅下降，说明该级别的传统谱补偿已经开始主要生成带限振荡，而不是可靠的地质同相轴高频补充。
+3. 低频保护谱外推仍是极激进设置下相对最稳的方法；非稳态稀疏反演版本最激进，但几乎完全损失了空间一致性。
+4. 这个版本适合作为“频谱拓宽上限”对照，不适合作为最终可用拓频结果。
+
+
